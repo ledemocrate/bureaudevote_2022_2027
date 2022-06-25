@@ -17,7 +17,7 @@ packageStatus()
 Sys.getenv()
 getwd()
 
-path <- "C:/Users/Quentin GOLLENTZ/Documents/PROJET PERSO/bureaudevote/"
+path <- getwd()
 
 #CHARGEMENT DES DONNEES VOTE
 # Endroit ou vous mettez les fichiers json en telechargeant sous le lien 
@@ -102,7 +102,7 @@ download.file(url, destfile = basename(url))
 
 #On lit le fichier
 depute_plus_file <- list.files()[1]
-depute_plus <- read.csv(depute_plus_file)
+depute_plus <- read.csv(depute_plus_file,encoding = "UTF-8")
 
 #On change le nom de la colonne sur laquelle on va joindre
 names(depute_plus)[1] <- "depute_code"

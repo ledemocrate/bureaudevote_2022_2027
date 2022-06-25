@@ -14,7 +14,7 @@ library(jsonlite)  # Pour ouvrir fichier json
 extract_num <- function(x) {as.numeric(gsub("[^0-9.-]+", "", as.character(x)))} 
 #Permet d'éviter le warning deprecated lorsque utilisation de extract_numeric
 
-path <- "C:/Users/Quentin GOLLENTZ/Documents/PROJET PERSO/bureaudevote/"
+path <- getwd()
 
 setwd(paste0(path,"data/data_vote/json"))
 #On recupere la liste des fichiers
@@ -40,7 +40,7 @@ titre_vote <- lapply(liste_vote, read_data)
 titre_vote <- bind_rows(titre_vote)
 
 # Récupération du lien amendement/loi sur le site :
-# https://www2.assemblee-nationale.fr/scrutins/liste/(offset)/{sequence_offset}/(legislature)/15/(type)/SOR/(idDossier)/TOUS
+# https://www2.assemblee-nationale.fr/scrutins/liste/(offset)/{sequence_offset}/(legislature)/16/(type)/SOR/(idDossier)/TOUS
 
 # Vérifié manuellement que la sequence_offset prend bien en compte l'ensemble des pages
 sequence_offset <- c("",c(1:44)*100)
@@ -49,7 +49,7 @@ function_get_url_dosier_scrutin <- function(url){
   print(url)
   url_prov <- paste0("https://www2.assemblee-nationale.fr/scrutins/liste/(offset)/",
                      url,
-                     "/(legislature)/15/(type)/TOUS/(idDossier)/TOUS")
+                     "/(legislature)/16/(type)/TOUS/(idDossier)/TOUS")
   scrutins <- read_html(url_prov)
   
   url_dossier_associe_prov<- scrutins %>% html_nodes("a")%>% 
