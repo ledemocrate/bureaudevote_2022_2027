@@ -1,0 +1,13 @@
+name: bureaudevote
+title: bureaudevote
+username:
+account: ledemocrate
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4916006
+bundleId: 5363470
+url: https://ledemocrate.shinyapps.io/bureaudevote/
+when: 1639339889.04221
+lastSyncTime: 1639339889.04221
+asMultiple: FALSE
+asStatic: FALSE
