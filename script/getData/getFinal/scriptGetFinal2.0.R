@@ -24,7 +24,7 @@ path <- getwd()
 setwd(paste0(path,"/data/data_vote"))
 
 #Endroit ou telecharger les données
-url <- "http://data.assemblee-nationale.fr/static/openData/repository/15/loi/scrutins/Scrutins_XV.json.zip"
+url <- "http://data.assemblee-nationale.fr/static/openData/repository/16/loi/scrutins/Scrutins.json.zip"
 download.file(url, destfile = basename(url))
 
 #Fichier zip donc dezippage
