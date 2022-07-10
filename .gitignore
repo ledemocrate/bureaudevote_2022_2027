@@ -1,8 +1,10 @@
 .Rproj.user
 .Rhistory
 .Rdata
+.Rproj
 .httr-oauth
 .DS_Store
 data/
 *.json
 *.csv
+script/getShiny2.0/data

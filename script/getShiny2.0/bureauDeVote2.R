@@ -1,11 +1,12 @@
+library(shiny)
 library(readtext)
 library(tidyverse)
 library(lubridate)
-
+library(readxl)
+library(writexl)
+library(data.table)
 library(shinyjs)
-library(googledrive)
-library(googlesheets4)
-library(gmailr)
+library(Microsoft365R)
 
 library(shinyFiles)
 library(shinyvalidate)
@@ -18,19 +19,22 @@ library(knitr)
 
 library(plotly)
 
+options(encoding="UTF-8")
 
-options(gargle_oauth_cache = ".secrets")
-drive_auth(path = ".secrets")
-gm_auth_configure(path = "data/sendMail.json")
-gs4_auth(path = ".secrets")
+outl <- get_personal_outlook()
+od <- get_personal_onedrive()
 
-responses_bis <- read_sheet("https://docs.google.com/spreadsheets/d/1clKV4cJdlKSFodG3zkxS0Y_wKfZaMY_urXc0aEHuEb8/edit?usp=sharing")%>%
+#CHARGEMENT DES DONNEES VOTE
+# Endroit ou vous mettez les fichiers json en telechargeant sous le lien 
+
+responses_bis <- read_excel("data/emargement.xlsx")  %>%
   mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
+responses <- read_excel("data/vote.xlsx")
 
 departement <- read.csv("data/data_departement/departements-france.csv") %>%
   select(nom_departement)
 
-data_democratie<- read.csv("data/data_democratie/data_democratie_2.csv")
+data_democratie<- fread("data/data_democratie/data_democratie_2.csv",encoding = "UTF-8") 
 fichier <-unique(data_democratie$nom_loi)
 
 fieldsEmargement <- c("Mail","Nom","Prenom","Departement","Naissance")
@@ -62,23 +66,29 @@ majorite <- function() {
 
 
 saveDataEmargement <- function(data) {
-  data <- data %>% as.list() %>% data.frame()
-  sheet_append("https://docs.google.com/spreadsheets/d/1clKV4cJdlKSFodG3zkxS0Y_wKfZaMY_urXc0aEHuEb8/edit?usp=sharing", data)
-}
+  responses_bis <- read_excel("data/emargement.xlsx")  %>%
+    mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
+  data <- data %>% as.list() %>% data.frame() 
+  responses_bis <- rbind(data,responses_bis)
+  write_xlsx(responses_bis,"data/emargement.xlsx")}
 
 loadDataEmargement <- function() {
-  responses_bis <-read_sheet("https://docs.google.com/spreadsheets/d/1clKV4cJdlKSFodG3zkxS0Y_wKfZaMY_urXc0aEHuEb8/edit?usp=sharing")%>%
+  responses_bis <- read_excel("data/emargement.xlsx")  %>%
+    mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
+  read_excel("data/emargement.xlsx") %>%
     mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
 }
 
 saveDataVote <- function(data) {
-  data <- data %>% as.list() %>% data.frame()
-  sheet_append("https://docs.google.com/spreadsheets/d/1CZ_-vixtmkbdnq_TuMPQSyaQ-vzxugYqxWXJnVtl2Hs/edit?usp=sharing", data)
-} 
+  responses <- read_excel("data/vote.xlsx")
+  data <- data %>% as.list() %>% data.frame() 
+  responses <- rbind(data,responses)
+  write_xlsx(responses,"data/vote.xlsx")}
 
 loadDataVote <- function() {
-  responses <-read_sheet("https://docs.google.com/spreadsheets/d/1CZ_-vixtmkbdnq_TuMPQSyaQ-vzxugYqxWXJnVtl2Hs/edit?usp=sharing")
-}
+  responses <- read_excel("data/vote.xlsx")
+  read_excel("data/vote.xlsx")
+  }
 
 
 # CSS to use in the app
@@ -145,31 +155,29 @@ ui <- fluidPage(
 
 server <- function(input, output,session) {
   
+  ######### Emargement partie
+  ## Partie Fixe
+  #  Presentation
+  output$presentation <- renderUI({
+    HTML(markdown::markdownToHTML(knit("data/fichier_presentation/presentation.rmd",quiet = TRUE)))})
+  #  Tableau
+  output$responses_bis <- DT::renderDataTable({
+    loadDataEmargement() %>%
+      select(Nom,Prenom,Departement,Naissance,Date)})
+  
+  ## Partie Variable
+  #On regarde si les champs nécessaire sont valide
+  iv <- InputValidator$new()
+  iv$add_rule("Mail", sv_required())
+  iv$add_rule("Mail", sv_email())
+  iv$add_rule("Mail", mail_unique())
+  iv$add_rule("Naissance", majorite())
+  iv$add_rule("Naissance", sv_required())
+  iv$add_rule("Departement", sv_required())
+  
+  iv$enable()
   
   observe({
-    # check if all mandatory fields have a value
-    mandatoryFilled <-
-      vapply(fieldsMandatoryVote,
-             function(x) {
-               !is.null(input[[x]]) && input[[x]] != ""
-             },
-             logical(1))
-    if(sum(responses_bis$Identifiant==input$Identifiant) == 1 | input$Identifiant == bin2hex(hash(charToRaw(input$Mail)))) {
-      mandatoryFilled[1] <- TRUE
-    } else {
-      mandatoryFilled[1] <- FALSE
-    }
-    mandatoryFilled <- all(mandatoryFilled)
-    
-    # enable/disable the submit button
-    shinyjs::toggleState(id = "submit", condition = mandatoryFilled)
-  })
-  
-  responses_bis <- read_sheet("https://docs.google.com/spreadsheets/d/1clKV4cJdlKSFodG3zkxS0Y_wKfZaMY_urXc0aEHuEb8/edit?usp=sharing")%>%
-    mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
-  
-  observe({
-    # check if all mandatory fields have a value
     mandatoryFilledEmargement <-
       vapply(fieldsMandatoryEmargement,
              function(x) {
@@ -188,23 +196,9 @@ server <- function(input, output,session) {
     }
     mandatoryFilledEmargement <- all(mandatoryFilledEmargement)
     
-    # enable/disable the submit button
+    # En fonction des conditions necessaire on active le bouton submit ou pas
     shinyjs::toggleState(id = "submit_emargement", condition = mandatoryFilledEmargement)
   })
-  
-  iv <- InputValidator$new()
-  iv$add_rule("Mail", sv_required())
-  iv$add_rule("Mail", sv_email())
-  iv$add_rule("Mail", mail_unique())
-  iv$add_rule("Naissance", majorite())
-  iv$add_rule("Naissance", sv_required())
-  iv$add_rule("Departement", sv_required())
-  
-  iv$enable()
-  
-  ######### Emargement partie
-  output$presentation <- renderUI({
-    HTML(markdown::markdownToHTML(knit("data/fichier_presentation/presentation.rmd",quiet = TRUE)))})
   
   formData_Emargement <- reactive({
     data <- c(sapply(fieldsEmargement, function(x) input[[x]]),
@@ -215,29 +209,57 @@ server <- function(input, output,session) {
   })
   
   observeEvent(input$submit_emargement, {
-    gm_mime() %>%
-      gm_from("goldentz.grahams@gmail.com") %>%
-      gm_to(input$Mail) %>%
-      gm_text_body(paste0("Vous trouverez ci-joint le code vous permettant de voter :", bin2hex(hash(charToRaw(input$Mail))))) %>%
-      gm_send_message()
+    msg <-outl$create_email(paste0("Vous trouverez ci-joint le code vous permettant de voter :", bin2hex(hash(charToRaw(input$Mail)))), 
+                            subject = "Token d'authentiufication du bureau de vote en ligne", to = input$Mail)
+    
+    msg$send()
+    
   })
   
   # When the Submit button is clicked, save the form data
   observeEvent(input$submit_emargement, {
-    saveDataEmargement(formData_Emargement())
-    loadDataEmargement()})
+    saveDataEmargement(formData_Emargement())})
   
-  # Show the previous responses
-  # (update with current response when Submit is clicked)
+  observeEvent(input$submit_emargement, {
   output$responses_bis <- DT::renderDataTable({
-    input$refresh
-    loadDataEmargement() %>%
-      select(Nom,Prenom,Departement,Naissance,Date)
-    
+     loadDataEmargement() %>%
+      select(Nom,Prenom,Departement,Naissance,Date)})
   })     
   
   ######### Vote parte
+  ## Partie Fixe
+  output$responses <- DT::renderDataTable({
+    loadDataVote() %>%
+      inner_join(responses_bis, by ="Identifiant") %>%
+      select(Nom,Prenom,Vote,Loi,Date.x) %>%
+      rename(Date = Date.x)
+  })    
   
+  observe({
+    mandatoryFilled <-
+      vapply(fieldsMandatoryVote,
+             function(x) {
+               !is.null(input[[x]]) && input[[x]] != ""
+             },
+             logical(1))
+    if(sum(responses_bis$Identifiant==input$Identifiant) == 1 | input$Identifiant == bin2hex(hash(charToRaw(input$Mail)))) {
+      mandatoryFilled[1] <- TRUE
+    } else {
+      mandatoryFilled[1] <- FALSE
+    }
+    mandatoryFilled <- all(mandatoryFilled)
+    
+    # enable/disable the submit button
+    shinyjs::toggleState(id = "submit", condition = mandatoryFilled)
+  })
+  
+  observeEvent(input$button, {
+    toggle('text_div')
+    output$markdown <- renderUI({
+      HTML(markdown::markdownToHTML(knit(paste0("data/data_resume_vie_publique_markdown/",input$file1,".rmd"), quiet = TRUE)))
+    })})
+  
+
   dat <- reactive({
     test <- data_democratie %>%
       filter(nom_loi== input$file1) %>%
@@ -261,11 +283,6 @@ server <- function(input, output,session) {
                ylim(0,570)+
                ggtitle("Distribution des votes relatifs à un texte de loi"),tooltip = c("date_vote","uid_loi","titre","type_texte")))
   
-  observeEvent(input$button, {
-    toggle('text_div')
-    output$markdown <- renderUI({
-      HTML(markdown::markdownToHTML(knit(paste0("data/data_resume_vie_publique/",input$file1,".rmd"), quiet = TRUE)))
-    })})
   
   formData <- reactive({
     data <- c(sapply(fieldsVote, function(x) input[[x]]),
@@ -277,24 +294,22 @@ server <- function(input, output,session) {
   
   # When the Submit button is clicked, save the form data
   observeEvent(input$submit, {
-    saveDataVote(formData())
-  })
-  observeEvent(input$Identifiant, {
-    loadDataEmargement()
-  })
+    saveDataVote(formData())})
   
-  # Show the previous responses
-  # (update with current response when Submit is clicked)
-  output$responses <- DT::renderDataTable({
-    input$submit
-    loadDataVote() %>%
-      inner_join(responses_bis,by="Identifiant")%>%
-      select(Nom,Prenom,Vote,Loi,Date.x) %>%
-      rename(Date = Date.x)
-  })    
+  observeEvent(input$submit, {
+    output$responses <- DT::renderDataTable({
+      loadDataVote() %>%
+        inner_join(responses_bis, by ="Identifiant") %>%
+        select(Nom,Prenom,Vote,Loi,Date.x) %>%
+        rename(Date = Date.x)
+    })    
+  })     
+
   
   session$onSessionEnded(function() {
-    stopApp()})
+    stopApp()
+    delfiles <- dir(path=getwd() ,pattern="*.md")
+    file.remove(file.path(getwd(), delfiles))})
 }
 
 shinyApp(ui, server)
