@@ -193,7 +193,7 @@ setwd(paste0(path,"/data/data_circo"))
 download.file("https://www.data.gouv.fr/fr/datasets/r/efa8c2e6-b8f7-4594-ad01-10b46b06b56a", 
               destfile = basename("https://www.data.gouv.fr/fr/datasets/r/efa8c2e6-b8f7-4594-ad01-10b46b06b56a"))
 
-
+library(tidyverse)
 library(maps)
 library(geojsonR)
 library(geojsonsf)
@@ -208,7 +208,10 @@ file_js = geojson_sf(list.files()[1]) %>%
   mutate(circo = as.numeric(circo))
 
 vote_final_v2$circo <- as.numeric(vote_final_v2$circo )
-vote_final_v3 <- inner_join(vote_final_v2,file_js,by=c("departementCode","circo"))
+ plot(st_as_sf(inner_join(vote_final_v2,file_js,by=c("departementCode","circo"))%>%
+  filter(uid_loi=='1544') %>%
+  mutate(geometry = st_sfc(geometry))%>%
+  select(vote_code,departementCode,geometry)))
 
 test <- st_as_sf(vote_final_v3 %>%
   filter(uid_loi=='1544') %>%
