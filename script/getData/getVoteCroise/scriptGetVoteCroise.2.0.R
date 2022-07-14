@@ -7,13 +7,14 @@ library(data.table)
 library(igraph)
 
 
-path <- "C:/Users/Quentin GOLLENTZ/Documents/PROJET PERSO/bureaudevote/"
+path <- getwd()
 
 setwd(paste0(path,"/data/data_democratie"))
 list.files()
 
-vote_final <- fread("data_democratie_2.csv")  %>%
-  filter(str_trim(nom_loi)!="")
+vote_final <- readRDS(file="data_democratie_v3.rds")  %>%
+  filter(str_trim(nom_loi)!="") %>%
+  select(uid_loi,vote_code,depute_code,nom_loi,nombre_vote_relatif_dossier_leg)
 vote_final$vote_code <- as.numeric(vote_final$vote_code)
   
 loi_seq <- unique(vote_final$nom_loi)
@@ -21,14 +22,7 @@ loi_seq <- unique(vote_final$nom_loi)
 fonction_vote_croise <- function(loi_uid){
   print(loi_uid)
   vote_final_select <- vote_final %>% 
-    filter(nom_loi == loi_uid)%>% 
-    mutate(vote_code = as.factor(vote_code),
-           nom = as.factor(nom),
-           prenom = as.factor(prenom),
-           experienceDepute = as.numeric(str_extract(experienceDepute,"\\b([0-9]|[1-9][0-9]|100)\\b")),
-           job = as.factor(job),
-           groupeAbrev = as.factor(groupeAbrev),
-           naissance = as.Date(naissance))  
+    filter(nom_loi == loi_uid)  
     vote_final_select<-  vote_final_select[!is.na(vote_final_select$vote_code),]
     
   vote_final_select <- inner_join(vote_final_select, vote_final_select, by=c("uid_loi"))%>%
@@ -43,8 +37,7 @@ fonction_vote_croise <- function(loi_uid){
     summarise(vote_commun = sum(vote_commun),
               loi_commun=sum(loi_commun),
               similarite=sum(vote_commun)/sum(loi_commun),
-              connectivite_2=sum(loi_commun)/(min(nombre_loi_vote_relatif_to,nombre_loi_vote_relatif_from)),
-              connectivite=sum(loi_commun)/(nombre_loi_vote_relatif_to+nombre_loi_vote_relatif_from-sum(loi_commun)))  
+              connectivite=sum(loi_commun)/(min(nombre_loi_vote_relatif_to,nombre_loi_vote_relatif_from)))  
   
   g <- as_data_frame(simplify(graph_from_data_frame(vote_final_select, 
                                                     directed=FALSE)))
@@ -61,6 +54,7 @@ fonction_vote_croise <- function(loi_uid){
   
 }
 
-setwd("C:/Users/GoldentzGrahamz/OneDrive/Documents/GitHub/bureaudevote/data/data_vote_croise/")
+
+setwd(paste0(path,"/data/data_vote_croise/"))
 lapply(loi_seq,fonction_vote_croise)
 

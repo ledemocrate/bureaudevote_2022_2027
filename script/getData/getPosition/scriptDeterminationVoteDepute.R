@@ -4,13 +4,14 @@ library(data.table)
 library(igraph)
 library(lsa)
 
-path <- "C:/Users/Quentin GOLLENTZ/Documents/PROJET PERSO/bureaudevote/"
+path <- getwd()
 
 setwd(paste0(path,"/data/data_democratie/"))
 list.files()
 
 vote_final <- fread("data_democratie.csv")  %>%
   filter(str_trim(nom_loi)!="") 
+
 vote_final$vote_code <- as.numeric(vote_final$vote_code)
 
 nom_loi_seq <-unique(vote_final$nom_loi)
@@ -42,15 +43,10 @@ for(j in 1:length(nom_loi_seq)){
     nombre_loi_relatif <-dim(vote_final_ech_mean)[2]
     nombre_loi_vote_relatif <- sum(!is.na(vote_final_ech[i,-1]))
     
-    if (statut_loi==0){
-      position3 <- 1-mean(t(abs(vote_final_ech[i,-1]-vote_final_ech_mean)),na.rm = TRUE)
-    } 
-    if(statut_loi==1){
-      position3 <-mean(t(abs(vote_final_ech[i,-1]-vote_final_ech_mean)),na.rm = TRUE)
-      
-    }
-    resultat_vecteur <- data.frame(nom_loi_choisi,depute_choisi,position2,position3,intensite2,nombre_loi_vote_relatif,nombre_loi_relatif)
-    colnames(resultat_vecteur) <-c("nom_loi","depute_code","position","position_corrige","intensite","nombre_vote_relatif_dossier_leg","nombre_texte_relatif_dossier_leg")
+    position3 <- 1-mean(t(abs(vote_final_ech[i,-1]-vote_final_ech_mean)),na.rm = TRUE)
+  
+    resultat_vecteur <- data.frame(nom_loi_choisi,depute_choisi,position3,intensite2,nombre_loi_vote_relatif,nombre_loi_relatif)
+    colnames(resultat_vecteur) <-c("nom_loi","depute_code","position","intensite","nombre_vote_relatif_dossier_leg","nombre_texte_relatif_dossier_leg")
     data_result_2 <- rbind(data_result_2,resultat_vecteur)}
 }
 
@@ -58,6 +54,9 @@ setwd(paste0(path,"/data/data_position/"))
 fwrite(data_result_2,"data_position.csv",sep=";",col.names = TRUE)
 
 setwd(paste0(path,"/data/data_democratie/"))
+
+vote_final <- readRDS(file="data_democratie_v2.rds")
 data_democratie <- vote_final %>%
   left_join(data_result_2,by=c("nom_loi","depute_code"))
-fwrite(data_democratie,"data_democratie_2.csv",sep=";",col.names = TRUE)
+
+saveRDS(data_democratie,file="data_democratie_v3.rds")

@@ -10,6 +10,15 @@ library(stringr)   # Pour manipuler les caracteres
 library(tidyverse) # Pour avoir tout l'univers tidy (coutau-suisse de R)
 library(dplyr)
 library(data.table)
+
+library(tidyverse)
+library(maps)
+library(geojsonR)
+library(geojsonsf)
+library(rio)
+library(sf)
+library(sp)
+
 #Petit rappel des informations techniques, cela ne mange pas de pain
 
 sessionInfo()
@@ -28,10 +37,10 @@ url <- "http://data.assemblee-nationale.fr/static/openData/repository/16/loi/scr
 download.file(url, destfile = basename(url))
 
 #Fichier zip donc dezippage
-unzip("Scrutins_XV.json.zip")
+unzip("Scrutins.json.zip")
 
 #L'archive ne nous sert plus à grand chose
-file.remove("Scrutins_XV.json.zip")
+file.remove("Scrutins.json.zip")
 
 #On se place là où les données sont (càd un niveau inférieur)
 setwd(paste0(path,"/data/data_vote/json"))
@@ -193,32 +202,23 @@ setwd(paste0(path,"/data/data_circo"))
 download.file("https://www.data.gouv.fr/fr/datasets/r/efa8c2e6-b8f7-4594-ad01-10b46b06b56a", 
               destfile = basename("https://www.data.gouv.fr/fr/datasets/r/efa8c2e6-b8f7-4594-ad01-10b46b06b56a"))
 
-library(tidyverse)
-library(maps)
-library(geojsonR)
-library(geojsonsf)
-library(rio)
-library(sf)
-library(sp)
 
 file_js = geojson_sf(list.files()[1]) %>%
   filter(str_detect(code_dpt,"Z")==FALSE)%>%
   select(num_circ,code_dpt,geometry)%>%
   rename(circo = num_circ,departementCode =code_dpt )%>%
-  mutate(circo = as.numeric(circo))
+  mutate(circo = as.numeric(circo)) %>%
+  mutate(departementCode = as.character(departementCode))
 
 vote_final_v2$circo <- as.numeric(vote_final_v2$circo )
- plot(st_as_sf(inner_join(vote_final_v2,file_js,by=c("departementCode","circo"))%>%
-  filter(uid_loi=='1544') %>%
-  mutate(geometry = st_sfc(geometry))%>%
-  select(vote_code,departementCode,geometry)))
+vote_final_v2$departementCode <- as.character(vote_final_v2$departementCode )
 
-test <- st_as_sf(vote_final_v3 %>%
-  filter(uid_loi=='1544') %>%
-  mutate(geometry = st_sfc(geometry))%>%
-  select(vote_code,departementCode,geometry))
+vote_final_v3 <- inner_join(vote_final_v2,file_js,by=c("departementCode","circo"))
 
-plot(test["vote_code"])
+plot(st_as_sf(vote_final_v3 %>%
+                filter(uid_loi=='1') %>%
+                mutate(geometry = st_sfc(geometry))%>%
+                select(vote_code,departementCode,geometry))["vote_code"])
 
 setwd(paste0(path,"/data/data_final"))
-fwrite(vote_final_v3,"vote_final_v3.csv",sep=";",col.names =TRUE)
+saveRDS(vote_final_v3, file = "vote_final_v3.rds")

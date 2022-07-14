@@ -28,12 +28,13 @@ library(plotly)
 
 options(encoding="UTF-8")
 
+`%nin%` = Negate(`%in%`)
+
 outl <- get_personal_outlook()
 od <- get_personal_onedrive()
 
 #CHARGEMENT DES DONNEES VOTE
 # Endroit ou vous mettez les fichiers json en telechargeant sous le lien 
-path <- getwd()
 
 responses_bis <- read_excel("data/emargement.xlsx")  %>%
   mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
@@ -48,7 +49,7 @@ file_js = geojson_sf("data/data_circo/data_circo.json") %>%
   rename(circo = num_circ,departementCode =code_dpt )%>%
   mutate(circo = as.numeric(circo))
 
-data_democratie<- fread("data/data_democratie/data_democratie_2.csv",encoding = "UTF-8") 
+data_democratie<- readRDS(file="data/data_democratie/data_democratie_v3.rds") 
 data_democratie$circo <- as.numeric(data_democratie$circo)
 
 fichier <-unique(data_democratie$nom_loi)
@@ -151,7 +152,7 @@ ui <- fluidPage(
                       sidebarLayout(
                         sidebarPanel(
                           titlePanel("Vote"),
-                          selectInput("file1", labelMandatory("Choix d'une loi:"),fichier),
+                          selectInput("file1", labelMandatory("Choix d'une loi:"),fichier,selected=fichier[2]),
                           textInput("Identifiant", labelMandatory("Identifiant"), ""),
                           selectInput("Vote", labelMandatory("Décision"),
                                       c("Favorable" = TRUE,
@@ -159,12 +160,14 @@ ui <- fluidPage(
                                         "Pas d'avis" = NA)),
                           actionButton("submit", "Submit", class = "btn-primary")),
                         mainPanel(
+                          h3("Metadata sur la loi"),
+                          tableOutput("metadata_loi"),
                           h3("Résultat par amendement"),
                           plotlyOutput('statistique_loi'),
-                          h3("Carte des position"),
-                          plotOutput("resultat_carte"),
-                          h3("Carte des intensité"),
-                          plotOutput("resultat_carte_intensite"),
+                          h3("Carte"),
+                          selectInput("carte","Choix d'une métrique :",c("position","intensite")),
+                          selectInput("zone","Choix d'un zone géographique :",unique(data_democratie$departementNom)),
+                          plotlyOutput("resultat_carte"),
                           h3("Contenue de la loi"),
                           actionButton("button", "Voir plus"),
                           hidden(
@@ -284,7 +287,7 @@ server <- function(input, output,session) {
   data_resultat_amendement <- reactive({
     test <- data_democratie %>%
       filter(nom_loi== input$file1) %>%
-      select(date_vote,uid_loi,titre,type_texte,nb_pour,nb_contre)%>%
+      select(date_vote,uid_loi,titre,type_texte,nb_pour,nb_contre,nb_abstentions)%>%
       unique()%>%
       arrange(uid_loi)
     
@@ -300,24 +303,47 @@ server <- function(input, output,session) {
   
   data_resultat_carte <- reactive({st_as_sf(data_democratie %>%
                                               filter(nom_loi== input$file1)%>%
-                                              select(vote_code,departementCode,circo,uid_loi,nom_loi,depute_code,position,intensite)%>%
-                                              na.omit() %>%
-                                              unique() %>%
-                                              inner_join(file_js,by=c("departementCode","circo"))%>%
+                                              filter(departementNom==input$zone )%>%
+                                              select(vote_code,departementCode,circo,uid_loi,nom_loi,depute_code,input$carte,geometry,nom,prenom,naissance,age,experienceDepute,nombreMandats,job,groupeAbrev,mail)%>%
                                               mutate(geometry = st_sfc(geometry))%>%
-                                              select(depute_code,circo,departementCode,geometry,nom_loi,position,intensite))})
+                                              select(depute_code,circo,departementCode,geometry,nom_loi,input$carte,nom,prenom,naissance,age,experienceDepute,nombreMandats,job,groupeAbrev,mail))})
  
-             
+  data_resultat_loi <- reactive({data_democratie %>%
+                                              filter(nom_loi== input$file1)%>%
+                                              mutate(Statut = case_when(Statut==0.5~ "En cours",
+                                                                        Statut==1.0~ "Actif",
+                                                                        Statut==0.0~ "Rejeté"))%>%
+                                              select(nom_loi,Statut,texte_loi_JO,Statut,nombre_texte_relatif_dossier_leg,url_dossier_associe)%>%
+                                              unique()%>%
+                                              rename('Nom de la loi'= nom_loi,'JO' = texte_loi_JO,'Nombre de texte' = nombre_texte_relatif_dossier_leg,'URL'= url_dossier_associe)})
+  
+  output$metadata_loi <- renderTable({
+    data_resultat_loi()
+  })   
              
   output$statistique_loi<-renderPlotly(
-    ggplotly(ggplot(data_resultat_amendement(), aes(fill=Position, y=Nombre, x=Ordre,label=date_vote,label_2=uid_loi,label_3=titre,label_4=type_texte)) + 
+    ggplotly(ggplot(data_resultat_amendement(), aes(fill=Position, y=Nombre, x=Ordre,label=date_vote,label_2=uid_loi,label_3=str_replace(titre,",",", \n"),label_4=type_texte)) + 
                geom_bar(position="stack", stat="identity") +
-               ylim(0,570)+
+               ylim(0,577)+
                ggtitle("Distribution des votes relatifs à un texte de loi"),tooltip = c("date_vote","uid_loi","titre","type_texte")))
   
-  output$resultat_carte <- renderPlot({plot(data_resultat_carte()["position"])})
-  output$resultat_carte_intensite <- renderPlot({plot(data_resultat_carte()["intensite"])})
-  
+  output$resultat_carte <- renderPlotly({ggplotly(ggplot(data_resultat_carte()) +
+                                                    geom_sf(aes(fill=get(input$carte), text = paste0(
+                                                      input$carte," : ", get(input$carte),"\n",
+                                                      "Prénom : ", prenom, "\n",
+                                                      "Nom: ", nom, "\n",
+                                                      "Prénom : ", prenom, "\n",
+                                                      "Naissance : ", naissance, "\n",
+                                                      "Age : ", age, "\n",
+                                                      "experienceDepute : ", experienceDepute, "\n",
+                                                      "nombreMandats : ", nombreMandats, "\n",
+                                                      "job : ", job, "\n",
+                                                      "groupeAbrev : ", groupeAbrev, "\n",
+                                                      "mail : ", mail, "\n"))) +
+                                                    scale_fill_gradient(low = "blue4", high = "red4") +
+                                                    labs(fill=input$carte),tooltip = c("text") 
+                                                 ) })
+
   formData <- reactive({
     data <- c(sapply(fieldsVote, function(x) input[[x]]),
               input$file1,as.character(Sys.time()))
