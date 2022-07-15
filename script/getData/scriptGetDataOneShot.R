@@ -442,7 +442,8 @@ data_result_2 <- data.frame()
       intensite2 <- sum(!is.na(vote_final_ech[i,-1]))/dim(vote_final_ech_mean)[2]
       nombre_loi_relatif <-dim(vote_final_ech_mean)[2]
       nombre_loi_vote_relatif <- sum(!is.na(vote_final_ech[i,-1]))
-      
+      vote_final_ech_mean
+      vote_final_ech[i,-1]
       position3 <- 1-mean(t(abs(vote_final_ech[i,-1]-vote_final_ech_mean)),na.rm = TRUE)
       
       resultat_vecteur <- data.frame(nom_loi_choisi,depute_choisi,position3,intensite2,nombre_loi_vote_relatif,nombre_loi_relatif)

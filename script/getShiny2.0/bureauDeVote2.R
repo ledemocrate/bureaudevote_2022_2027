@@ -25,6 +25,7 @@ library(sf)
 library(sp)
 
 library(plotly)
+library(tm)
 
 options(encoding="UTF-8")
 
@@ -49,7 +50,7 @@ file_js = geojson_sf("data/data_circo/data_circo.json") %>%
   rename(circo = num_circ,departementCode =code_dpt )%>%
   mutate(circo = as.numeric(circo))
 
-data_democratie<- readRDS(file="data/data_democratie/data_democratie_v3.rds") 
+data_democratie<- readRDS(file="C:/Users/GoldentzGrahamz/Documents/bureaudevote_2022_2027/data/data_democratie/data_democratie_v3.rds") 
 data_democratie$circo <- as.numeric(data_democratie$circo)
 
 fichier <-unique(data_democratie$nom_loi)
@@ -163,6 +164,7 @@ ui <- fluidPage(
                           h3("Metadata sur la loi"),
                           tableOutput("metadata_loi"),
                           h3("Résultat par amendement"),
+                          tableOutput("metadata_amendement"),
                           plotlyOutput('statistique_loi'),
                           h3("Carte"),
                           selectInput("carte","Choix d'une métrique :",c("position","intensite")),
@@ -180,11 +182,16 @@ ui <- fluidPage(
 server <- function(input, output,session) {
   
   ######### Emargement partie
-  ## Partie Fixe
   #  Presentation
-  output$presentation <- renderUI({
-    HTML(markdown::markdownToHTML(knit("data/fichier_presentation/presentation.rmd",quiet = TRUE)))})
-  #  Tableau
+  formData_Emargement <- reactive({
+    data <- c(sapply(fieldsEmargement, function(x) input[[x]]),
+              bin2hex(hash(charToRaw(input$Mail))),as.character(Sys.time()))
+    names(data)[6] <- "Identifiant"
+    names(data)[7] <- "Date"
+    data
+  })
+  
+  output$presentation <- renderUI({HTML(markdown::markdownToHTML(knit("data/fichier_presentation/presentation.rmd",quiet = TRUE)))})
   output$responses_bis <- DT::renderDataTable({
     loadDataEmargement() %>%
       select(Nom,Prenom,Departement,Naissance,Date)})
@@ -223,15 +230,6 @@ server <- function(input, output,session) {
     # En fonction des conditions necessaire on active le bouton submit ou pas
     shinyjs::toggleState(id = "submit_emargement", condition = mandatoryFilledEmargement)
   })
-  
-  formData_Emargement <- reactive({
-    data <- c(sapply(fieldsEmargement, function(x) input[[x]]),
-              bin2hex(hash(charToRaw(input$Mail))),as.character(Sys.time()))
-    names(data)[6] <- "Identifiant"
-    names(data)[7] <- "Date"
-    data
-  })
-  
   observeEvent(input$submit_emargement, {
     msg <-outl$create_email(paste0("Vous trouverez ci-joint le code vous permettant de voter :", bin2hex(hash(charToRaw(input$Mail)))), 
                             subject = "Token d'authentiufication du bureau de vote en ligne", to = input$Mail)
@@ -239,11 +237,8 @@ server <- function(input, output,session) {
     msg$send()
     
   })
-  
-  # When the Submit button is clicked, save the form data
   observeEvent(input$submit_emargement, {
     saveDataEmargement(formData_Emargement())})
-  
   observeEvent(input$submit_emargement, {
   output$responses_bis <- DT::renderDataTable({
      loadDataEmargement() %>%
@@ -251,13 +246,90 @@ server <- function(input, output,session) {
   })     
   
   ######### Vote parte
-  ## Partie Fixe
+  
+  formData <- reactive({
+    data <- c(sapply(fieldsVote, function(x) input[[x]]),
+              input$file1,as.character(Sys.time()))
+    names(data)[3] <- "Loi"
+    names(data)[4] <- "Date"
+    data
+  })
+  
+  data_resultat_user <- reactive({
+    test <- loadDataVote() %>%
+      filter(Loi== input$file1)})
+  data_resultat_amendement <- reactive({
+    test <- data_democratie %>%
+      filter(nom_loi== input$file1) %>%
+      select(date_vote,uid_loi,titre,type_texte,nb_pour,nb_contre,nb_abstentions)%>%
+      mutate(uid_loi=as.integer(uid_loi))%>%
+      unique()%>%
+      arrange(uid_loi)
+    
+    sequence <- seq(1,nrow(test))
+    
+    test <-  test %>%
+      mutate(Ordre = sequence)  %>%
+      pivot_longer( cols = starts_with("nb"),
+                    names_to = "Position",
+                    values_to = "Nombre")
+    test
+  })
+  data_resultat_amendement_2 <- reactive({
+    test <- data_democratie %>%
+      filter(nom_loi== input$file1) %>%
+      select(uid_loi,titre)%>%
+      mutate(uid_loi=as.integer(uid_loi))%>%
+      unique() %>%
+      arrange(uid_loi)})
+  data_resultat_carte <- reactive({st_as_sf(data_democratie %>%
+                                              filter(nom_loi== input$file1)%>%
+                                              filter(departementNom==input$zone )%>%
+                                              select(vote_code,departementCode,circo,uid_loi,nom_loi,depute_code,input$carte,geometry,nom,prenom,naissance,age,experienceDepute,nombreMandats,job,groupeAbrev,mail)%>%
+                                              mutate(geometry = st_sfc(geometry))%>%
+                                              select(depute_code,circo,departementCode,geometry,nom_loi,input$carte,nom,prenom,naissance,age,experienceDepute,nombreMandats,job,groupeAbrev,mail))})
+  data_resultat_loi <- reactive({data_democratie %>%
+      filter(nom_loi== input$file1)%>%
+      mutate(Statut = case_when(Statut==0.5~ "En cours",
+                                Statut==1.0~ "Actif",
+                                Statut==0.0~ "Rejeté"))%>%
+      select(nom_loi,Statut,texte_loi_JO,Statut,nombre_texte_relatif_dossier_leg,url_dossier_associe)%>%
+      unique()%>%
+      rename('Nom de la loi'= nom_loi,'JO' = texte_loi_JO,'Nombre de texte' = nombre_texte_relatif_dossier_leg,'URL'= url_dossier_associe)})
+  
   output$responses <- DT::renderDataTable({
-    loadDataVote() %>%
+    data_resultat_user() %>%
       inner_join(responses_bis, by ="Identifiant") %>%
       select(Nom,Prenom,Vote,Loi,Date.x) %>%
       rename(Date = Date.x)
   })    
+  output$metadata_loi <- renderTable({
+    data_resultat_loi()
+  })   
+  output$metadata_amendement <- renderTable({
+    data_resultat_amendement_2()
+  })  
+  output$statistique_loi<-renderPlotly({ggplotly(ggplot(data_resultat_amendement(), aes(fill=Position, y=Nombre, x=Ordre,label=date_vote,label_2=uid_loi,label_4=type_texte)) + 
+               scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+               geom_bar(position="stack", stat="identity") +
+               ylim(0,577)+
+               ggtitle("Distribution des votes relatifs à un texte de loi"),tooltip = c("date_vote","uid_loi","type_texte"))})
+  output$resultat_carte <- renderPlotly({ggplotly(ggplot(data_resultat_carte()) +
+                                                    geom_sf(aes(fill=get(input$carte), text = paste0(
+                                                      input$carte," : ", get(input$carte),"\n",
+                                                      "Prénom : ", prenom, "\n",
+                                                      "Nom: ", nom, "\n",
+                                                      "Prénom : ", prenom, "\n",
+                                                      "Naissance : ", naissance, "\n",
+                                                      "Age : ", age, "\n",
+                                                      "experienceDepute : ", experienceDepute, "\n",
+                                                      "nombreMandats : ", nombreMandats, "\n",
+                                                      "job : ", job, "\n",
+                                                      "groupeAbrev : ", groupeAbrev, "\n",
+                                                      "mail : ", mail, "\n"))) +
+                                                    scale_fill_gradient(low = "blue4", high = "red4") +
+                                                    labs(fill=input$carte),tooltip = c("text") 
+  ) })
   
   observe({
     mandatoryFilled <-
@@ -276,86 +348,13 @@ server <- function(input, output,session) {
     # enable/disable the submit button
     shinyjs::toggleState(id = "submit", condition = mandatoryFilled)
   })
-  
   observeEvent(input$button, {
     toggle('text_div')
     output$markdown <- renderUI({
       HTML(markdown::markdownToHTML(knit(paste0("data/data_resume_vie_publique_markdown/",input$file1,".rmd"), quiet = TRUE)))
     })})
-  
-
-  data_resultat_amendement <- reactive({
-    test <- data_democratie %>%
-      filter(nom_loi== input$file1) %>%
-      select(date_vote,uid_loi,titre,type_texte,nb_pour,nb_contre,nb_abstentions)%>%
-      unique()%>%
-      arrange(uid_loi)
-    
-    sequence <- seq(1,nrow(test))
-    
-    test <-  test %>%
-      mutate(Ordre = sequence)  %>%
-      pivot_longer( cols = starts_with("nb"),
-                    names_to = "Position",
-                    values_to = "Nombre")
-    test
-  })
-  
-  data_resultat_carte <- reactive({st_as_sf(data_democratie %>%
-                                              filter(nom_loi== input$file1)%>%
-                                              filter(departementNom==input$zone )%>%
-                                              select(vote_code,departementCode,circo,uid_loi,nom_loi,depute_code,input$carte,geometry,nom,prenom,naissance,age,experienceDepute,nombreMandats,job,groupeAbrev,mail)%>%
-                                              mutate(geometry = st_sfc(geometry))%>%
-                                              select(depute_code,circo,departementCode,geometry,nom_loi,input$carte,nom,prenom,naissance,age,experienceDepute,nombreMandats,job,groupeAbrev,mail))})
- 
-  data_resultat_loi <- reactive({data_democratie %>%
-                                              filter(nom_loi== input$file1)%>%
-                                              mutate(Statut = case_when(Statut==0.5~ "En cours",
-                                                                        Statut==1.0~ "Actif",
-                                                                        Statut==0.0~ "Rejeté"))%>%
-                                              select(nom_loi,Statut,texte_loi_JO,Statut,nombre_texte_relatif_dossier_leg,url_dossier_associe)%>%
-                                              unique()%>%
-                                              rename('Nom de la loi'= nom_loi,'JO' = texte_loi_JO,'Nombre de texte' = nombre_texte_relatif_dossier_leg,'URL'= url_dossier_associe)})
-  
-  output$metadata_loi <- renderTable({
-    data_resultat_loi()
-  })   
-             
-  output$statistique_loi<-renderPlotly(
-    ggplotly(ggplot(data_resultat_amendement(), aes(fill=Position, y=Nombre, x=Ordre,label=date_vote,label_2=uid_loi,label_3=str_replace(titre,",",", \n"),label_4=type_texte)) + 
-               geom_bar(position="stack", stat="identity") +
-               ylim(0,577)+
-               ggtitle("Distribution des votes relatifs à un texte de loi"),tooltip = c("date_vote","uid_loi","titre","type_texte")))
-  
-  output$resultat_carte <- renderPlotly({ggplotly(ggplot(data_resultat_carte()) +
-                                                    geom_sf(aes(fill=get(input$carte), text = paste0(
-                                                      input$carte," : ", get(input$carte),"\n",
-                                                      "Prénom : ", prenom, "\n",
-                                                      "Nom: ", nom, "\n",
-                                                      "Prénom : ", prenom, "\n",
-                                                      "Naissance : ", naissance, "\n",
-                                                      "Age : ", age, "\n",
-                                                      "experienceDepute : ", experienceDepute, "\n",
-                                                      "nombreMandats : ", nombreMandats, "\n",
-                                                      "job : ", job, "\n",
-                                                      "groupeAbrev : ", groupeAbrev, "\n",
-                                                      "mail : ", mail, "\n"))) +
-                                                    scale_fill_gradient(low = "blue4", high = "red4") +
-                                                    labs(fill=input$carte),tooltip = c("text") 
-                                                 ) })
-
-  formData <- reactive({
-    data <- c(sapply(fieldsVote, function(x) input[[x]]),
-              input$file1,as.character(Sys.time()))
-    names(data)[3] <- "Loi"
-    names(data)[4] <- "Date"
-    data
-  })
-  
-  # When the Submit button is clicked, save the form data
   observeEvent(input$submit, {
     saveDataVote(formData())})
-  
   observeEvent(input$submit, {
     output$responses <- DT::renderDataTable({
       loadDataVote() %>%
@@ -363,8 +362,8 @@ server <- function(input, output,session) {
         select(Nom,Prenom,Vote,Loi,Date.x) %>%
         rename(Date = Date.x)
     })    
-  })     
-
+    
+  })    
   
   session$onSessionEnded(function() {
     stopApp()
