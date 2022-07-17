@@ -1,8 +1,15 @@
-######################################################
+###########################################
 # Création d'un dataset data_democratie_v3
-######################################################
+###########################################
 
-#LIBRAIRIE UTILISEE
+# Créateur : QUENTIN GOLLENTZ
+# Date de modification : 15/07/2022
+
+######################
+### LIBRAIRIE UTILISEE
+######################
+
+# Ensemble de librairie pour la manipulation des données
 library(jsonlite)  # Pour ouvrir fichier json
 library(stringr)   # Pour manipuler les caracteres
 library(tidyverse) # Pour avoir tout l'univers tidy (coutau-suisse de R)
@@ -17,6 +24,7 @@ library(rio)
 library(sf)
 library(sp)
 
+# Ensemble de librairie pour lee web scrapping
 library(rvest) #Pour le web scrapping
 library(purrr) #Pour certaine fonction
 
@@ -24,7 +32,7 @@ library(purrr) #Pour certaine fonction
 library(igraph)
 library(lsa)
 
-# Fonction éventuellement utlisé pour exclure des valeurs
+# Fonction éventuellement utilisé pour exclure des valeurs
 `%nin%` = Negate(`%in%`)
 
 #Petit rappel des informations techniques, cela ne mange pas de pain
@@ -35,7 +43,11 @@ getwd()
 
 # On initialise un répertoire racine
 path <-  getwd()
-#CHARGEMENT DES DONNEES VOTE
+
+###############################
+### RECUPERATION DES DATA VOTES
+###############################
+
 # Endroit ou vous mettez les fichiers json en telechargeant sous le lien 
 setwd(paste0(path,"/data/data_vote"))
 
@@ -109,25 +121,33 @@ vote <- bind_rows(vote)
 #On verifie la coherence 
 head(vote,1000)
 
-#CHARGEMENT DES DONNEES DEPUTE
-# Endroit ou vous mettez le fichier csv en telechargeant sous le lien 
+rm(list=c("liste_vote","url","read_data"))
+
+#################################
+### RECUPERATION DES DATA DEPUTES
+#################################
+
+#Endroit ou vous mettez le fichier csv en telechargeant sous le lien 
 setwd(paste0(path,"/data/data_depute/"))
+list.files()
 
 #Endroit ou telecharger les données
 url <- "https://www.data.gouv.fr/fr/datasets/r/092bd7bb-1543-405b-b53c-932ebb49bb8e"
 download.file(url, destfile = basename(url))
 
-#On lit le fichier
-depute_plus_file <- list.files()[1]
-depute_plus <- read_csv(depute_plus_file)
+#On fait des mise à jour sur ce fichier car il est dynamique et forunis une image dans un instant T
+depute_plus_origine <- read_csv("depute.csv")
+depute_plus_candidat <- read_csv(list.files()[1])
+depute_plus <- rbind(depute_plus_candidat[depute_plus_candidat$id %nin% depute_plus_origine$id,],depute_plus_origine)
+fwrite(depute_plus,"depute.csv")
 
 #On change le nom de la colonne sur laquelle on va joindre
 names(depute_plus)[1] <- "depute_code"
+depute_plus$depute_code<-as.character(depute_plus$depute_code) 
 
-#CROISEMENT DES DONNEES VOTE/DEPUTE++ par depute_code pour avoir des données exhaustives
-
-vote_final <- left_join(vote, depute_plus, by = "depute_code")  %>% 
-  select(uid_loi,date_vote,nb_votant,nb_pour,nb_contre,nb_abstentions,depute_code,vote_code,
+#Enrichissement des données de votes avec les données 
+vote <- inner_join(vote, depute_plus, by = "depute_code")  %>% 
+  select(uid_loi,date_vote,nb_votant,nb_pour,nb_contre,nb_abstentions,nb_absence,depute_code,vote_code,
          nom,prenom,naissance,age,departementNom,departementCode,circo,
          experienceDepute,nombreMandats,job,groupeAbrev,mail) %>%
   #Modification du type des champs
@@ -136,6 +156,7 @@ vote_final <- left_join(vote, depute_plus, by = "depute_code")  %>%
          nb_pour=as.integer(nb_pour),
          nb_contre=as.integer(nb_contre),
          nb_abstentions=as.integer(nb_abstentions),
+         nb_absence=as.integer(nb_absence),
          nom = as.factor(nom),
          prenom = as.factor(prenom),
          experienceDepute = as.numeric(str_extract(experienceDepute,"\\b([0-9]|[1-9][0-9]|100)\\b")),
@@ -144,13 +165,18 @@ vote_final <- left_join(vote, depute_plus, by = "depute_code")  %>%
          naissance = as.Date(naissance),
          age = as.integer(age))
 
-# Création données absence
-dep <- unique(vote_final$depute_code)
-loi <- unique(vote_final$uid_loi)
+rm(list=c("depute_plus_origine","depute_plus_candidat","depute_plus","url"))
+
+##############################
+### CREATION DES DATA ABSENCES
+##############################
+
+dep <- unique(vote$depute_code)
+loi <- unique(vote$uid_loi)
 
 vote_final_v2 <- expand.grid(dep,loi)
 names(vote_final_v2) <- c("depute_code","uid_loi")
-vote_final_v2 <- left_join(vote_final_v2,vote_final,by=c("depute_code","uid_loi"))
+vote_final_v2 <- left_join(vote_final_v2,vote,by=c("depute_code","uid_loi"))
 vote_final_v2 <-as.data.table(vote_final_v2)
 
 
@@ -159,6 +185,7 @@ correction_nb_votant <- unique(vote_final_v2[, list(selec = !is.na(nb_votant),nb
 correction_nb_pour <- unique(vote_final_v2[, list(selec = !is.na(nb_pour),nb_pour = nb_pour),by="uid_loi"][selec == TRUE][,c(1,3)])
 correction_nb_contre <- unique(vote_final_v2[, list(selec = !is.na(nb_contre),nb_contre = nb_contre),by="uid_loi"][selec == TRUE][,c(1,3)])
 correction_nb_abstentions <- unique(vote_final_v2[, list(selec = !is.na(nb_abstentions),nb_abstentions = nb_abstentions),by="uid_loi"][selec == TRUE][,c(1,3)])
+correction_nb_absence <- unique(vote_final_v2[, list(selec = !is.na(nb_absence),nb_absence = nb_absence),by="uid_loi"][selec == TRUE][,c(1,3)])
 
 
 correction_nom <- unique(vote_final_v2[, list(selec = !is.na(nom),nom = nom),by="depute_code"][selec == TRUE][,c(1,3)])
@@ -177,24 +204,32 @@ correction_departementCode <- unique(vote_final_v2[, list(selec = !is.na(departe
 
 vote_final_v2 <- vote_final_v2 %>%
   select(uid_loi,depute_code,vote_code) %>%
-  inner_join(correction_date_vote,by="uid_loi")  %>%
-  inner_join(correction_nb_votant,by="uid_loi")  %>%
-  inner_join(correction_nb_pour,by="uid_loi")  %>%
-  inner_join(correction_nb_contre,by="uid_loi")  %>%
-  inner_join(correction_nb_abstentions,by="uid_loi")  %>%
-  inner_join(correction_nom,by="depute_code")  %>%
-  inner_join(correction_prenom,by="depute_code")  %>%
-  inner_join(correction_naissance,by="depute_code")  %>%
-  inner_join(correction_age,by="depute_code")  %>%
-  inner_join(correction_experienceDepute,by="depute_code")  %>%
-  inner_join(correction_nombreMandats,by="depute_code")  %>%
-  inner_join(correction_job,by="depute_code")  %>%
-  inner_join(correction_groupeAbrev,by="depute_code")  %>%
-  inner_join(correction_departementNom,by="depute_code")  %>%
-  inner_join(correction_departementCode,by="depute_code")  %>%
-  inner_join(correction_circo,by="depute_code")  %>%
-  inner_join(correction_mail,by="depute_code")
+  left_join(correction_date_vote,by="uid_loi")  %>%
+  left_join(correction_nb_votant,by="uid_loi")  %>%
+  left_join(correction_nb_pour,by="uid_loi")  %>%
+  left_join(correction_nb_contre,by="uid_loi")  %>%
+  left_join(correction_nb_abstentions,by="uid_loi")  %>%
+  left_join(correction_nb_absence,by="uid_loi")  %>%
+  left_join(correction_nom,by="depute_code")  %>%
+  left_join(correction_prenom,by="depute_code")  %>%
+  left_join(correction_naissance,by="depute_code")  %>%
+  left_join(correction_age,by="depute_code")  %>%
+  left_join(correction_experienceDepute,by="depute_code")  %>%
+  left_join(correction_nombreMandats,by="depute_code")  %>%
+  left_join(correction_job,by="depute_code")  %>%
+  left_join(correction_groupeAbrev,by="depute_code")  %>%
+  left_join(correction_departementNom,by="depute_code")  %>%
+  left_join(correction_departementCode,by="depute_code")  %>%
+  left_join(correction_circo,by="depute_code")  %>%
+  left_join(correction_mail,by="depute_code")
 
+rm(list=c("correction_date_vote","correction_nb_votant","correction_nb_pour","correction_nb_contre","correction_nb_abstentions","correction_nom",
+          "correction_prenom","correction_experienceDepute","correction_job","correction_groupeAbrev","correction_age","correction_naissance",
+          "correction_departementNom","correction_circo","correction_mail","correction_nombreMandats","correction_departementCode","vote","loi","dep","correction_nb_absence"))
+
+############################################
+### RECUPERATION DES DATA DE CIRCONSCRIPTION
+############################################
 
 # Ajout information circonscription
 setwd(paste0(path,"/data/data_circo"))
@@ -225,14 +260,19 @@ file_js = geojson_sf(list.files()[1]) %>%
 vote_final_v2$circo <- as.numeric(vote_final_v2$circo )
 vote_final_v2$departementCode <- as.character(vote_final_v2$departementCode )
 
-vote_final_v3 <- left_join(vote_final_v2,file_js,by=c("departementCode","circo"))
+vote_final_v2 <- left_join(vote_final_v2,file_js,by=c("departementCode","circo"))
 
-# Création des fichiers amendement/loi
+rm(list=c("file_js"))
+
+################################
+### RECUPERATION DES DATA DE LOI
+################################
 
 extract_num <- function(x) {as.numeric(gsub("[^0-9.-]+", "", as.character(x)))} 
 #Permet d'éviter le warning deprecated lorsque utilisation de extract_numeric
 
 setwd(paste0(path,"/data/data_vote/json"))
+
 #On recupere la liste des fichiers
 liste_vote <- list.files()
 
@@ -249,17 +289,17 @@ read_data <- function(liste){
   data <- data.frame(scrutin_numero,titre,date_vote)
   return(data)
 }
+
 #Application de la fonction pour chaque fichier de la liste
 titre_vote <- lapply(liste_vote, read_data)
 
 #Creation d'un data.frame
 titre_vote <- bind_rows(titre_vote)
 
-# Récupération du lien amendement/loi sur le site :
 # https://www2.assemblee-nationale.fr/scrutins/liste/(offset)/{sequence_offset}/(legislature)/16/(type)/SOR/(idDossier)/TOUS
-
 # Vérifié manuellement que la sequence_offset prend bien en compte l'ensemble des pages
 sequence_offset <- c("")#,c(1:44)*100)
+
 #Fonction permettant de récupérer les données d'une page
 function_get_url_dosier_scrutin <- function(url){
   url <-
@@ -289,10 +329,13 @@ function_get_url_dosier_scrutin <- function(url){
   scrutin_dossier_data <- data.frame(scrutin_numero,url_dossier_associe)
   return(scrutin_dossier_data)
 }
+
 #Application de la fonction pour chaque page
 dossier_scrutin <- lapply(sequence_offset,function_get_url_dosier_scrutin)
+
 #Création d'un data.frame
 dossier_scrutin <- unique(bind_rows(dossier_scrutin))
+
 #On s'assure du type de certaine variable
 dossier_scrutin$url_dossier_associe <- as.character(dossier_scrutin$url_dossier_associe)
 head(dossier_scrutin)
@@ -316,13 +359,17 @@ fonction_url_texte_loi <- function(url){
   resume_loi_url <- data.frame(url,resume_loi_url)
   return(resume_loi_url)
 }
+
 #Certaine page n'existe pas, cela cause un problème, 
 #On s'assure donc que le fait d'avoir d'un probleme n'empeche pas la continuation de l'application de la fonction
 fonction_url_texte_loi <- possibly(fonction_url_texte_loi, otherwise = FALSE)
+
 #Application de la fonction pour chaque dossier legislatif
 url_texte_loi <- lapply(unique(dossier_scrutin$url_dossier_associe),fonction_url_texte_loi)
+
 #On supprime les fois où la fonction n'a rien récupérer
 url_texte_loi <- url_texte_loi[lapply(url_texte_loi, isFALSE) == FALSE]
+
 #On crée un data.frame
 url_texte_loi <- bind_rows(na.omit(url_texte_loi))
 
@@ -343,17 +390,20 @@ fonction_url_texte_loi_JO <- function(url){
   resume_loi_url <- data.frame(url,resume_loi_url)
   return(resume_loi_url)
 }
+
 #Certaine page n'existe pas, cela cause un problème, 
 #On s'assure donc que le fait d'avoir d'un probleme n'empeche pas la continuation de l'application de la fonction
 fonction_url_texte_loi_JO <- possibly(fonction_url_texte_loi_JO, otherwise = FALSE)
+
 #Application de la fonction pour chaque dossier legislatif
 url_texte_loi_JO <- lapply(unique(dossier_scrutin$url_dossier_associe),fonction_url_texte_loi_JO)
+
 #On supprime les fois où la fonction n'a rien récupérer
 url_texte_loi_JO <- url_texte_loi_JO[lapply(url_texte_loi_JO, isFALSE) == FALSE]
 url_texte_loi_JO <- bind_rows(na.omit(url_texte_loi_JO))
+
 #On s'assure du type de certaine variable
 url_texte_loi_JO$value <- as.character(url_texte_loi_JO$value)
-
 
 names(url_texte_loi)[1] <- "url_dossier_associe"
 names(url_texte_loi)[2] <- "texte_loi"
@@ -402,28 +452,34 @@ data_loi <-unique(data_loi %>%
                     select(uid_loi,nom_loi,date_vote,titre,type_texte))
 
 data_loi$uid_loi <-as.character(data_loi$uid_loi)
-data_loi <- left_join(data_loi,nom_loi,by="nom_loi")
+data_loi <- inner_join(data_loi,nom_loi,by="nom_loi")
 
 data_loi$uid_loi <-as.character(data_loi$uid_loi )
 
-data_democratie_v2 <- inner_join(vote_final_v3 ,data_loi,by="uid_loi",keep=FALSE) %>%
+
+data_democratie_v2 <- inner_join(vote_final_v2 ,data_loi,by="uid_loi",keep=FALSE) %>%
   select(-date_vote.y)%>%
   rename(date_vote=date_vote.x)
 
-vote_final <- data_democratie_v2 
-  
-vote_final$vote_code <- as.numeric(vote_final$vote_code)
-  
-  nom_loi_seq <-unique(vote_final$nom_loi)
+rm(list=c("data_loi","nom_loi","dossier_scrutin","titre_vote","url_texte_loi","url_texte_loi_JO","vote_final_v2",
+          "read_data","fonction_url_texte_loi_JO","sequence_offset","function_get_url_dosier_scrutin","fonction_url_texte_loi","extract_num","liste_vote"))
+
+######################################################
+### RECUPERATION DES DATA DE POSITION VIS A VIS DE LOI
+######################################################
+
+nom_loi_seq <-unique(data_democratie_v2$nom_loi)
   
 # Détermointion position député
 data_result_2 <- data.frame()
-  for(j in 1:length(nom_loi_seq)){
+
+for(j in 1:length(nom_loi_seq)){
     print(nom_loi_seq[j])
     nom_loi_choisi <- nom_loi_seq[j]
-    statut_loi <- unique(vote_final[vote_final$nom_loi==nom_loi_choisi,]$Statut)
+    statut_loi <- unique(data_democratie_v2[data_democratie_v2$nom_loi==nom_loi_choisi,]$Statut)
     
-    vote_final_ech <- vote_final %>%
+    vote_final_ech <- data_democratie_v2 %>%
+      mutate(vote_code=as.numeric(vote_code)) %>%
       filter(nom_loi==nom_loi_choisi) %>%
       select(depute_code,vote_code,uid_loi) %>%
       pivot_wider(names_from = uid_loi,values_from = vote_code,values_fn =mean)
@@ -442,7 +498,8 @@ data_result_2 <- data.frame()
       intensite2 <- sum(!is.na(vote_final_ech[i,-1]))/dim(vote_final_ech_mean)[2]
       nombre_loi_relatif <-dim(vote_final_ech_mean)[2]
       nombre_loi_vote_relatif <- sum(!is.na(vote_final_ech[i,-1]))
-      
+      vote_final_ech_mean
+      vote_final_ech[i,-1]
       position3 <- 1-mean(t(abs(vote_final_ech[i,-1]-vote_final_ech_mean)),na.rm = TRUE)
       
       resultat_vecteur <- data.frame(nom_loi_choisi,depute_choisi,position3,intensite2,nombre_loi_vote_relatif,nombre_loi_relatif)
@@ -451,13 +508,111 @@ data_result_2 <- data.frame()
   }
   
 
-
 data_democratie_v3 <- data_democratie_v2 %>%
-    left_join(data_result_2,by=c("nom_loi","depute_code"))
+    inner_join(data_result_2,by=c("nom_loi","depute_code")) 
+
+rm(list=c("nom_loi_seq","data_democratie_v2","data_result_2",
+          "resultat_vecteur","nom_loi_choisi","vote_final_ech",
+          "vote_final_ech_mean","nombre_loi_vote_relatif",
+          "nombre_loi_relatif","position2","position3","depute_choisi","i","j","statut_loi","intensite2","vote_final_ech_depute"))
+
+###########################################
+### Suppression des absents non nécessaire
+###########################################
+
+data_democratie_v3 <- data_democratie_v3[!is.na(data_democratie_v3$vote_code), ]
+
+######################################
+### Création de fichier de vote croise
+######################################
+
+
+vote_final <- data_democratie_v3 %>%
+  select(uid_loi,vote_code,depute_code,nom_loi,nombre_vote_relatif_dossier_leg,groupeAbrev)
+
+vote_final$vote_code <- as.numeric(vote_final$vote_code)
+
+loi_seq <- unique(vote_final$nom_loi)
+
+fonction_vote_croise <- function(loi_uid){
+  print(loi_uid)
   
+  vote_final_select <- vote_final %>% 
+    filter(nom_loi == loi_uid)  
+  
+  vote_final_select <- inner_join(vote_final_select, vote_final_select, by=c("uid_loi")) %>%
+    mutate(vote_commun = case_when(vote_code.x==vote_code.y~1,
+                                   vote_code.x!=vote_code.y~0),
+           loi_commun = 1) %>%
+    rename(from =depute_code.x,to=depute_code.y,
+           groupe_from =groupeAbrev.x,groupe_to=groupeAbrev.y,
+           nombre_loi_vote_relatif_from=nombre_vote_relatif_dossier_leg.x,
+           nombre_loi_vote_relatif_to=nombre_vote_relatif_dossier_leg.y) %>%
+    select(from,to,groupe_from,groupe_to,nombre_loi_vote_relatif_from,nombre_loi_vote_relatif_to,vote_commun,loi_commun)%>%
+    group_by(from,to,groupe_from,groupe_to,nombre_loi_vote_relatif_from,nombre_loi_vote_relatif_to)%>%
+    summarise(vote_commun = sum(vote_commun),
+              loi_commun=sum(loi_commun),
+              similarite=sum(vote_commun)/sum(loi_commun),
+              connectivite=sum(loi_commun)/(min(nombre_loi_vote_relatif_to,nombre_loi_vote_relatif_from)))%>%
+    filter(from!=to) %>%
+    group_by(groupe_from,groupe_to) %>%
+    summarise(connectivite=mean(connectivite),similarite=mean(similarite)) %>%
+    rename(from=groupe_from,to=groupe_to)
+  
+  g <- as_data_frame(simplify(graph_from_data_frame(vote_final_select, 
+                                                    directed=FALSE)))
+  vote_final_select <- unique(inner_join(g,vote_final_select,by=c("from","to"))) 
+  
+  assign(paste0("vote_croise_","",loi_uid,sep=""),
+         vote_final_select)
+  
+  fwrite(get(paste0("vote_croise_","",loi_uid,sep="")),
+         paste0("vote_croise_","",loi_uid,".csv"))
+  
+  rm(list=c(paste0("vote_croise_","",loi_uid,sep=""),"vote_final_select"))
+  
+}
+
+
+setwd(paste0(path,"/data/data_vote_croise/"))
+lapply(loi_seq,fonction_vote_croise)
+
+rm(list=c("vote_final","loi_seq","fonction_vote_croise"))
+
+#################################
+### Enrichissement date de GROUPE
+#################################
+
+groupe_data <- data_democratie_v3 %>%
+  select(depute_code,groupeAbrev,nom_loi,position,intensite) %>%
+  unique() %>%
+  group_by(groupeAbrev,nom_loi) %>%
+  summarise(intensite_groupe=mean(intensite),
+            position_groupe = mean(position),
+            depute_participant = n())
+
+groupe_data_effectif  <-data_democratie_v3 %>%
+  select(depute_code,groupeAbrev) %>%
+  unique()%>%
+  group_by(groupeAbrev)%>%
+  summarise(effectif_groupe=n(),
+            representation_groupe = n()/577)
+
+groupe <- inner_join(groupe_data,groupe_data_effectif,by="groupeAbrev")%>%
+  mutate(participation_groupe=depute_participant/effectif_groupe*intensite_groupe)%>%
+  select(groupeAbrev,nom_loi,position_groupe,participation_groupe,representation_groupe)
+
+
+data_democratie_v3 <- inner_join(data_democratie_v3,groupe,by=c("groupeAbrev","nom_loi"))
+
+rm(list=c("groupe_data","groupe_data_effectif","groupe"))
+
+#################################
+### Enrichissement date de GROUPE
+#################################
+
 setwd(paste0(path,"/data/data_democratie"))
 saveRDS(data_democratie_v3, file = "data_democratie_v3.rds")
 
 setwd(paste0(path,"/script/GetShiny2.0/data/data_democratie"))
 saveRDS(data_democratie_v3, file = "data_democratie_v3.rds")
-  
