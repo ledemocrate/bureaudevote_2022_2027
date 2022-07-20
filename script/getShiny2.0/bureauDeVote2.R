@@ -34,23 +34,6 @@ library(igraph)
 library(tidygraph)
 library(ggraph)
 
-########################
-nom_loi_select <- "maintien dispositif veille securite sanitaire"
-
-node<- readRDS(file="C:/Users/Quentin GOLLENTZ/Documents/bureaudevote_2022_2027/data/data_democratie/data_democratie_v3.rds") %>%
-  select(groupeAbrev,position_groupe,nom_loi,participation_groupe)%>%
-  unique() %>%
-  filter(nom_loi == nom_loi_select) %>%
-  select(groupeAbrev,position_groupe,participation_groupe)%>%
-  mutate(Statut=case_when(position_groupe>0.5~"POUR",
-                          position_groupe<0.5~"CONTRE"))
-
-
-edge <- read.csv(paste0("C:/Users/Quentin GOLLENTZ/Documents/bureaudevote_2022_2027/data/data_vote_croise/vote_croise_",nom_loi_select , ".csv")) %>%
-  mutate(Lien=case_when(similarite>0.5~"ACCORD",
-                        similarite<0.5~"PAS D'ACCORD"))
-
-##############################
 
 options(encoding="UTF-8")
 
@@ -388,7 +371,7 @@ server <- function(input, output,session) {
                               position_groupe<0.5~"CONTRE"))
     
     
-    edge <- read.csv(paste0("data/data_vote_croise/vote_croise_",nom_loi_select , ".csv")) %>%
+    edge <- read.csv(paste0("data/data_vote_croise/vote_croise_",input$file1 , ".csv")) %>%
       mutate(Lien=case_when(similarite>0.5~"ACCORD",
                             similarite<0.5~"PAS D'ACCORD"))
     
