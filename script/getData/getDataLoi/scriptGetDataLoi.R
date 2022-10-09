@@ -43,7 +43,7 @@ titre_vote <- bind_rows(titre_vote)
 # https://www2.assemblee-nationale.fr/scrutins/liste/(offset)/{sequence_offset}/(legislature)/16/(type)/SOR/(idDossier)/TOUS
 
 # Vérifié manuellement que la sequence_offset prend bien en compte l'ensemble des pages
-sequence_offset <- c("")#,c(1:44)*100)
+sequence_offset <- c("",c(1:3)*100)
 #Fonction permettant de récupérer les données d'une page
 function_get_url_dosier_scrutin <- function(url){
   url <-
