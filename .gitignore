@@ -4,6 +4,5 @@
 .Rproj
 .httr-oauth
 .DS_Store
-data/
 *.json
 *.csv
