@@ -6,8 +6,4 @@
 .DS_Store
 data/
 *.json
-<<<<<<< Updated upstream
 *.csv
-=======
-*.csv
->>>>>>> Stashed changes
