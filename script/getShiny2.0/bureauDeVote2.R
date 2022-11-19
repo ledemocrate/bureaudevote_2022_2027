@@ -210,6 +210,7 @@ ui <- fluidPage(
                           DT::dataTableOutput("responses", width = 300), tags$hr())))))
 
 
+
 server <- function(input, output,session) {
   
   ######### Emargement partie

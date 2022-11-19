@@ -10,3 +10,5 @@ Bureau de vote en ligne sur les lois proposées par l'Assemblée Nationale.
 Il est à faire remarquer que pour l'instant il s'agit d'une application non sécurisé et constitue dans un premier temps un projet
 personnel.
 
+Pour faire tourner l'API il convient d'avoir des données en faisant tourner le script script/getData/scriptGetDataOneShot.R
+
