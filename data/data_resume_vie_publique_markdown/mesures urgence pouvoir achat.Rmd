@@ -1,0 +1,51 @@
+---
+title: "Mesures urgence pouvoir achat"
+author: "Quentin GOLLENTZ"
+date: "26/11/2022"
+output: html_document
+---
+
+# Resume de la loi
+
+
+
+Le texte, qui a été enrichi par les parlementaires, comprend trois volets : la protection du niveau de vie des ménages, la protection des consommateurs et la souveraineté énergétique. Les mesures d'urgence qu'il porte représentent 20 milliards d'euros de dépenses, inscrites dans le budget rectificatif 2022, qui comprend d'autres dispositifs de soutien (aide exceptionnelle de rentrée, poursuite du bouclier tarifaire sur l'énergie, remise carburant...).
+
+Ces mesures s'inscrivent dans le contexte de la hausse des prix à la consommation, et en particulier des prix de l’énergie en raison de la guerre en Ukraine. En juillet 2022, selon l'Insee, la hausse de l'inflation a atteint 6,1% sur un an, un niveau jamais atteint depuis 1985.
+
+Les mesures sur le niveau de vie
+Pour les ménages
+
+Pour compenser la hausse des prix, la loi prévoit la revalorisation de 4% avec effet rétroactif au 1er juillet 2022 :
+
+- des pensions de retraite et d'invalidité de base, après une revalorisation de 1,1% en janvier 2022 ;
+- des allocations familiales, après une revalorisation de 1,8% en avril 2022 ;
+- des minima sociaux, à savoir du revenu de solidarité active (RSA), de l'allocation aux adultes handicapés (AAH) et de l'allocation de solidarité aux personnes âgées (Aspa). Le RSA et l'AAH avaient déjà augmenté de 1,8% au mois d'avril 2022 ;
+- de la prime d'activité.
+
+Afin de couvrir les hausses de loyer, l'aide personnalisée au logement (APL) est revalorisée de 3,5% avec effet rétroactif au 1er juillet 2022 (revalorisation qui était à l'origine prévue au 1er octobre 2022 et au 1er janvier 2023). Un bouclier pour plafonner la hausse des loyers à 3,5% maximum est mis en place pendant un an, jusqu'au 30 juin 2023. Les députés ont abaissé ce plafond à 2,5% pour les loyers outre-mer et institué un dispositif particulier pour la Corse. Les parlementaires ont aussi interdit les surloyers pour certains logements, notamment ceux ayant des sanitaires sur le palier ou un niveau de performance énergétique de classe F ou de classe G.
+
+De plus, à l'initiative des députés, la déconjugalisation de l'allocation aux adultes handicapés a été votée(nouvelle fenêtre), avec une entrée en vigueur au plus tard le 1er octobre 2023. Il s'agit de mettre fin à l'injustice sociale des personnes en situation de handicap qui vivent en couple. L'individualisation de l'AAH avait déjà fait l'objet de vifs débats lors d'une proposition de loi discutée en 2020 et 2021 et d'une pétition déposée au Sénat. Un mécanisme transitoire est prévu pour les éventuels ménages "perdants"
+Pour les salariés et les travailleurs indépendants
+
+Plusieurs dispositions du texte intéressent les salariés :
+
+- la prime exceptionnelle de pouvoir d’achat dite "prime Macron", instaurée en 2019, est remplacée par la prime de partage de la valeur (PPV). Cette prime, qui vient en complément du salaire, est à la discrétion des employeurs. Son dispositif est pérenne et mis en place selon des conditions évolutives. À partir du 1er juillet 2022 et en 2023, les entreprises pourront verser à leurs salariés une prime de 3 000 euros maximum, voire de 6 000 euros si un accord d'intéressement a été conclu. Dans la limite de ces montants, la prime sera exonérée de cotisations sociales. Les salariés gagnant jusqu'à trois fois le SMIC bénéficieront en plus d'une exonération d'impôt sur le revenu. À partir de 2024, elle sera ouverte à tous les salariés. Elle sera exonérée de cotisations sociales mais soumise à l'impôt sur le revenu. La prime pourra être versée en une ou plusieurs fois. Pour éviter qu'elle ne remplace les augmentations de salaire, les sénateurs ont limité le nombre de versements à une fois par trimestre ;
+    
+- la mise en œuvre d’accords d’intéressement notamment dans les petites et moyennes entreprises (PME) est facilitée ;
+un outil de restructuration des branches professionnelles est prévu afin d'inciter les partenaires sociaux à rehausser régulièrement leurs minima de branche au niveau du SMIC ;
+    
+- le déblocage anticipé de l’épargne salariale est rendu possible pour l'achat de biens ou la fourniture de services. Les salariés pourront demander le déblocage de leur épargne avant le 31 décembre 2022, dans la limite de 10 000 euros, sans que cette somme soit imposée ;
+    
+- les titres restaurants pourront être utilisés jusqu'à fin 2023 pour tous les produits alimentaires (directement ou non consommables).
+
+Sur amendement du Sénat, une réduction de cotisations patronales, au titre des heures supplémentaires, s'appliquera à partir du 1er octobre 2022 pour les entreprises de 20 à 249 salariés. Un décret doit venir fixer le montant de cette réduction forfaitaire.
+
+De leur côté, les travailleurs indépendants (artisans, commerçants, professions libérales, agriculteurs) vont bénéficier d'une baisse de leurs cotisations sociales. Cette baisse sera d'environ 550 euros pour des revenus nets d'activité proches du SMIC. En deçà, les indépendants seront exonérés de cotisations.
+
+Sur proposition du Sénat pour protéger les commerçants, la hausse des loyers commerciaux des PME sera plafonné à 3,5% pendant un an.
+
+
+# Lien de référence
+
+<https://www.vie-publique.fr/loi/285608-loi-pouvoir-dachat-16-aout-2022>.

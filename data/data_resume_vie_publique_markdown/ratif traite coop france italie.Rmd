@@ -1,0 +1,36 @@
+---
+title: "La France et l'Italie ont signé un traité de coopération bilatéral"
+author: "Quentin GOLLENTZ"
+date: "26/11/2022"
+output: html_document
+---
+
+# Resume de la loi
+
+La France et l'Italie ont signé vendredi en grande pompe à Rome un traité bilatéral de coopération renforcée pour consolider une relation éprouvée ces dernières années par une brouille diplomatique et dans un contexte de transition en Europe avec le départ d'Angela Merkel. Le traité a été paraphé au palais présidentiel du Quirinal par le président français Emmanuel Macron et le chef du gouvernement Mario Draghi, en présence du président italien Sergio Mattarella.
+
+À lire aussi
+    
+Dette: Bruxelles fait la leçon à l’Italie
+
+Les trois hommes se sont échangé de longues accolades, tandis que la patrouille de France et son équivalent italien, les Flèches tricolores, survolaient la capitale en laissant dans le ciel un panache de fumées aux couleurs des deux pays. Ce «traité pour une coopération bilatérale renforcée», dit traité de Quirinal, est rarissime en Europe: il s'agit seulement du second traité signé par la France après celui de l'Elysée, paraphé en 1963, avec l'Allemagne, complété par celui d'Aix-la-Chapelle en 2019.
+Pour Emmanuel Macron, le traité «scelle une amitié profonde»
+
+Mario Draghi a salué «un moment historique dans les relations entre nos deux pays», lors d'une conférence de presse conjointe avec Emmanuel Macron après la cérémonie de signature. «Les institutions que nous avons l'honneur de représenter s'appuient sur les mêmes valeurs républicaines, sur le respect des droits humains et civils, sur l'européisme», a ajouté l'ancien président de la Banque centrale européenne.
+
+«De Stendhal à Umberto Eco, de Mastroianni à Belmondo, à Claudia Cardinale, nous partageons de nombreux souvenirs et références communs», a-t-il dit. Pour Emmanuel Macron, le traité «scelle une amitié profonde». «C'était presque une anomalie de ne pas avoir ce traité du Quirinal, parce que tant de choses nous unissent, nos histoires, nos cultures, nos artistes». «Pays fondateurs de l'Union, premiers signataires des traités (...), nous défendons une Europe plus intégrée, plus démocratique, plus souveraine», a souligné le président français.
+
+Les deux responsables ont multiplié les références à leur engagement européen, estimant que leur rapprochement renforçait l'Union européenne dans un contexte difficile pour le bloc, après le Brexit et au moment où la chancelière allemande Angela Merkel passe la main à Berlin. «Mme Merkel est encore en exercice aujourd'hui», a martelé Emmanuel Macron à Rome. La France ne cherche pas «des voies de substitution» à la relation franco-allemande après son départ, a-t-il assuré.
+«Une phase de transition historique»
+
+Le commissaire européen à l'Economie, l'Italien Paolo Gentiloni, a salué sur Twitter une entente franco-italienne qui «renforce toute l'Union européenne dans une phase de transition historique». Le traité avait été annoncé en 2017 mais avait été gelé après la formation en 2018 d'un gouvernement populiste conduit par le Mouvement 5 étoiles avec la Ligue (extrême droite) de Matteo Salvini.
+
+La crise a culminé début 2019 quand le vice-président du Conseil italien, Luigi Di Maio, avait rencontré en France un meneur des «gilets jaunes». Peu avant, Matteo Salvini, ministre de l'Intérieur, avait appelé à la démission du président français. Pour protester, Paris avait rappelé temporairement son ambassadeur en Italie, Christian Masset, la plus grave crise diplomatique entre les deux voisins depuis 1945.
+
+À lire aussiUn traité pour sceller le rapprochement entre Paris et Rome
+
+Concrètement, le traité prévoit des axes de coopération renforcée en matière de diplomatie et de défense, dans les transitions numériques et environnementales, la culture et l'éducation, la coopération économique et industrielle, et l'espace. Il instaure par ailleurs un service civil commun pour les jeunes et prévoit l'invitation régulière de ministres aux conseils des ministres respectifs, sur le modèle du traité d'Aix-la-Chapelle. La France et l'Italie sont les 2ème et 3ème économies de la zone euro derrière l'Allemagne. Ensemble, elles représentent près d'un tiers des citoyens de l'UE et de son PIB.
+
+# Lien de référence
+
+<https://www.lefigaro.fr/flash-eco/la-france-et-l-italie-ont-signe-un-traite-de-cooperation-bilateral-20211126>.

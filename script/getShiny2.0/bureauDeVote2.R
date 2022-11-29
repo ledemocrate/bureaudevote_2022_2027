@@ -6,7 +6,6 @@ library(readxl)
 library(writexl)
 library(data.table)
 library(shinyjs)
-library(Microsoft365R)
 
 library(shinyFiles)
 library(shinyvalidate)
@@ -33,7 +32,7 @@ library(ggnetwork)
 library(igraph)
 library(tidygraph)
 library(ggraph)
-
+library(Microsoft365R)
 
 options(encoding="UTF-8")
 
