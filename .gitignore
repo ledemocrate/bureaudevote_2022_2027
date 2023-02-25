@@ -1,8 +1,3 @@
-.Rproj.user
-.Rhistory
-.Rdata
+/data
 .Rproj
-.httr-oauth
-.DS_Store
-*.json
-*.csv
+
