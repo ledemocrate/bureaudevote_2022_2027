@@ -1,3 +1,10 @@
 /data
-.Rproj
-
+/.Rproj.user
+*.RData
+*.Rhistory
+*.Rproj
+*.csv
+*.rds
+*.json
+*.html
+*.Rmd

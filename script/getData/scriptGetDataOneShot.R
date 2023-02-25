@@ -40,7 +40,7 @@ sessionInfo()
 packageStatus()
 Sys.getenv()
 getwd()
-
+setwd("C:/Users/Quentin GOLLENTZ/OneDrive/Documents/PROJET PERSO/bureaudevote_2022_2027/")
 # On initialise un répertoire racine
 path <-  getwd()
 
@@ -298,7 +298,7 @@ titre_vote <- bind_rows(titre_vote)
 
 # https://www2.assemblee-nationale.fr/scrutins/liste/(offset)/{sequence_offset}/(legislature)/16/(type)/SOR/(idDossier)/TOUS
 # Vérifié manuellement que la sequence_offset prend bien en compte l'ensemble des pages
-sequence_offset <- c("",c(1:6)*100)
+sequence_offset <- c("",c(1:7)*100)
 
 #Fonction permettant de récupérer les données d'une page
 function_get_url_dosier_scrutin <- function(url){
@@ -515,6 +515,9 @@ rm(list=c("nom_loi_seq","data_democratie_v2","data_result_2",
           "resultat_vecteur","nom_loi_choisi","vote_final_ech",
           "vote_final_ech_mean","nombre_loi_vote_relatif",
           "nombre_loi_relatif","position2","position3","depute_choisi","i","j","statut_loi","intensite2","vote_final_ech_depute"))
+
+setwd(paste0(path,"/data/data_democratie"))
+saveRDS(data_democratie_v3, file = "data_democratie_v3_twitter.rds")
 
 ###########################################
 ### Suppression des absents non nécessaire

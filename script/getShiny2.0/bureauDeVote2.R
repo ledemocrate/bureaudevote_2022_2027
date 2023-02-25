@@ -33,13 +33,22 @@ library(igraph)
 library(tidygraph)
 library(ggraph)
 library(Microsoft365R)
+<<<<<<< HEAD
+library(emayili)
+=======
+>>>>>>> 2948d7c045d760993e98d8eb14879c48d0c17d42
 
 options(encoding="UTF-8")
 
 `%nin%` = Negate(`%in%`)
 
-outl <- get_personal_outlook()
-od <- get_personal_onedrive()
+
+smtp <- server(
+  host = "smtp.gmail.com",
+  port = 465,
+  username = "ledemocratealsacien@gmail.com",
+  password = "rsraqiozwscmdaqc"
+)
 
 #CHARGEMENT DES DONNEES VOTE
 # Endroit ou vous mettez les fichiers json en telechargeant sous le lien 
@@ -131,7 +140,7 @@ saveDataVote <- function(data) {
   write_xlsx(responses,"data/vote.xlsx")}
 
 loadDataVote <- function() {
-  responses <- read_excel("data/vote.xlsx")
+  responszsézes <- read_excel("data/vote.xlsx")
   read_excel("data/vote.xlsx")
 }
 
@@ -224,8 +233,8 @@ server <- function(input, output,session) {
   
   output$presentation <- renderUI({HTML(markdown::markdownToHTML(knit("data/fichier_presentation/presentation.rmd",quiet = TRUE)))})
   output$responses_bis <- DT::renderDataTable({
-    DT::datatable(groupe_image %>%
-                    inner_join(loadDataEmargement(),by="Parti") %>%
+    DT::datatable(loadDataEmargement() %>%
+                    inner_join(groupe_image,by="Parti") %>%
                     select(Nom,Prenom,Departement,Parti,Naissance,Date,Flag) %>%
                     group_by(Parti,Flag)%>%
                     summarise(`Nombre de représentant`=n()),escape=FALSE)
@@ -265,52 +274,30 @@ server <- function(input, output,session) {
     # En fonction des conditions necessaire on active le bouton submit ou pas
     shinyjs::toggleState(id = "submit_emargement", condition = mandatoryFilledEmargement)
   })
+  
+
   observeEvent(input$submit_emargement, {
     saveDataEmargement(formData_Emargement())
-    loadDataEmargement()
     
-    msg <-outl$create_email(paste0("Vous trouverez ci-joint le code vous permettant de voter :", bin2hex(hash(charToRaw(input$Mail)))), 
-                            subject = "Token d'authentiufication du bureau de vote en ligne", to = input$Mail)
+    email <- envelope(
+      to = input$Mail,
+      from = "ledemocratealsacien@gmail.com",
+      subject = "Token d'authentification du bureau de vote en ligne",
+      text = paste0("Vous trouverez ci-joint le code vous permettant de voter :", bin2hex(hash(charToRaw(input$Mail)))))
     
-    msg$send()
-    
-    mandatoryFilledEmargement <-
-      vapply(fieldsMandatoryEmargement,
-             function(x) {
-               !is.null(input[[x]]) && input[[x]] != ""
-             },
-             logical(1))
-    
-    if(sum(responses_bis$Mail==str_trim(input$Mail)) == 0 && isValidEmail(input$Mail)) {
-      mandatoryFilledEmargement[1] <- TRUE
-    } else {
-      mandatoryFilledEmargement[1] <- FALSE
-    }
-    if(year(Sys.Date())-year(input$Naissance) > 17) {
-      mandatoryFilledEmargement[5] <- TRUE
-    } else {
-      mandatoryFilledEmargement[5] <- FALSE
-    }
-    mandatoryFilledEmargement <- all(mandatoryFilledEmargement)
-    
-    # En fonction des conditions necessaire on active le bouton submit ou pas
-    shinyjs::toggleState(id = "submit_emargement", condition = mandatoryFilledEmargement)
-    
-    output$responses_bis <- DT::renderDataTable({
-      DT::datatable(groupe_image %>%
-        inner_join(loadDataEmargement(),by="Parti") %>%
-        select(Nom,Prenom,Departement,Parti,Naissance,Date,flag) %>%
-        group_by(Parti,flag)%>%
-        summarise(`Representation du bureau de vote`=n(Nom)),escape=FALSE)
-    })
-    
+    smtp(email, verbose = TRUE)
+
     updateTextInput(session, "Mail", value = "")
-    
-    
-  })
+    output$responses_bis <- DT::renderDataTable({
+      DT::datatable(loadDataEmargement() %>%
+                      inner_join(groupe_image,by="Parti") %>%
+                      select(Nom,Prenom,Departement,Parti,Naissance,Date,Flag) %>%
+                      group_by(Parti,Flag)%>%
+                      summarise(`Nombre de représentant`=n()),escape=FALSE)
+    })})
+  
 
- 
-
+  
   ######### Vote parte
   
   formData <- reactive({
@@ -457,11 +444,13 @@ server <- function(input, output,session) {
     # enable/disable the submit button
     shinyjs::toggleState(id = "submit", condition = mandatoryFilled)
   })
+  
   observeEvent(input$button, {
     toggle('text_div')
     output$markdown <- renderUI({
       HTML(markdown::markdownToHTML(knit(paste0("data/data_resume_vie_publique_markdown/",input$file1,".rmd"), quiet = TRUE)))
     })})
+  
   observeEvent(input$submit, {
     saveDataVote(formData())})
   observeEvent(input$submit, {

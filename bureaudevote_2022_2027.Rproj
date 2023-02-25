@@ -1,0 +1,19 @@
+Version: 1.0
+
+RestoreWorkspace: Yes
+SaveWorkspace: Ask
+AlwaysSaveHistory: No
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: pdfLaTeX
+
+PythonType: system
+PythonVersion: 3.10.4
+PythonPath: C:/Users/GoldentzGrahamz/AppData/Local/Programs/Python/Python310/python.exe
+
+SpellingDictionary: fr_FR
