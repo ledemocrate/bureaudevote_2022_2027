@@ -11,10 +11,3 @@ camel run get_vote_waiting.yaml
 
 docker run -p 11:11 -v .:/integrations apache/camel-jbang:4.4.0 run /integrations/http.java /integrations/hello.java --prompt
 docker run -p 11:11 -v .:/integrations apache/camel-jbang:4.4.0 run /integrations/post_vote.java --prompt
-
-
-
- 
-
-
-
