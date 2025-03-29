@@ -1,4 +1,20 @@
+######################################################
+# Analyse des données de vote de l'assemblée française
+######################################################
 
+#INTEGRATION DES DONNEES VOTE(Json) & Deputés(Csv)
+library(RPostgreSQL)
+
+db <- 'bdd_democratie'  #provide the name of your db
+host_db <- 'BDD_DEMOCRATIE' #i.e. # i.e. 'ec2-54-83-201-96.compute-1.amazonaws.com'  
+db_port <- '5432'  # or any other port specified by the DBA
+db_user <- "postgres"  
+db_password <- 'postgres'
+option <- "-c search_path=assemblee_elective"
+
+con <- dbConnect(RPostgres::Postgres(), dbname = db, host=host_db, port=db_port, user=db_user, password=db_password,options=option) 
+
+#LIBRAIRIE UTILISEE
 library(tidyverse) 
 library(data.table)
 library(igraph)
@@ -9,7 +25,7 @@ path <- getwd()
 setwd(paste0(path,"/data/data_democratie/"))
 list.files()
 
-vote_final <- fread("data_democratie.csv")  %>%
+vote_final <- read_rds(list.files()[1])  %>%
   filter(str_trim(nom_loi)!="") 
 
 vote_final$vote_code <- as.numeric(vote_final$vote_code)
@@ -21,8 +37,7 @@ data_result_2 <- data.frame()
 for(j in 1:length(nom_loi_seq)){
   print(nom_loi_seq[j])
   nom_loi_choisi <- nom_loi_seq[j]
-  statut_loi <- unique(vote_final[vote_final$nom_loi==nom_loi_choisi,]$Statut)
-  
+
   vote_final_ech <- vote_final %>%
     filter(nom_loi==nom_loi_choisi) %>%
     select(depute_code,vote_code,uid_loi) %>%
@@ -50,13 +65,5 @@ for(j in 1:length(nom_loi_seq)){
     data_result_2 <- rbind(data_result_2,resultat_vecteur)}
 }
 
-setwd(paste0(path,"/data/data_position/"))
-fwrite(data_result_2,"data_position.csv",sep=";",col.names = TRUE)
 
-setwd(paste0(path,"/data/data_democratie/"))
-
-vote_final <- readRDS(file="data_democratie_v2.rds")
-data_democratie <- vote_final %>%
-  left_join(data_result_2,by=c("nom_loi","depute_code"))
-
-saveRDS(data_democratie,file="data_democratie_v3.rds")
+dbWriteTable(con,'data_position',data_result_2, row.names=FALSE)

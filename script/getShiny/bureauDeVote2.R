@@ -35,42 +35,34 @@ library(ggraph)
 library(Microsoft365R)
 library(emayili)
 
-print(getwd())
 options(encoding="UTF-8")
 
 `%nin%` = Negate(`%in%`)
 
 
-#smtp <- server(
-#  host = "smtp.gmail.com",
-#  port = 465,
-#  username = "ledemocratealsacien@gmail.com",
-#  password = "+@!Wfusdfcf02680000!@+"
-#)
+smtp <- server(
+  host = "smtp.gmail.com",
+  port = 465,
+  username = "ledemocratealsacien@gmail.com",
+  password = "rsraqiozwscmdaqc"
+)
 
 #CHARGEMENT DES DONNEES VOTE
 # Endroit ou vous mettez les fichiers json en telechargeant sous le lien 
 
-responses_bis <- read_delim(file = "data/emargement.csv",
-                            delim = ";",
-                           col_names = TRUE) # %>%
-  #mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
-
-
-
-
-responses <- read_delim(file ="data/vote.csv",
-                        delim = ";",
-                        col_names = TRUE)
+responses_bis <- read_excel("data/emargement.xlsx")  %>%
+  mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
+responses <- read_excel("data/vote.xlsx")
 
 data_democratie<- readRDS(file="data/data_democratie/data_democratie_v3.rds") 
 
 node<- data_democratie %>%
   select(groupeAbrev,position_groupe,nom_loi,participation_groupe)%>%
   unique()
-unique(sort(data_democratie$groupeAbrev))
+
+
 groupe_image <- data.frame(
-  Parti = as.character(unique(sort(data_democratie$groupeAbrev))),
+  Parti = as.character(unique(data_democratie$groupeAbrev)),
   Flag = c('<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Logo_France_Insoumise.svg/langfr-280px-Logo_France_Insoumise.svg.png" height="52"></img>',
            '<img src="https://upload.wikimedia.org/wikipedia/fr/thumb/f/fd/Ps-france-2016.svg/langfr-200px-Ps-france-2016.svg.png" height="52"></img>',
            '<img src="https://www.eelv.fr/files/2020/03/LOGO_EELV_BLANC-1024x547.jpg" height="52"></img>',
@@ -80,7 +72,6 @@ groupe_image <- data.frame(
            '<img src="https://www.les4verites.com/wp-content/uploads/2017/11/logo-lr.png" height="52"></img>',
            '<img src="https://upload.wikimedia.org/wikipedia/commons/9/94/MoDem_logo.svg" height="52"></img>',
            '<img src="https://www.joshthedesigner.com/wp-content/uploads/bfi_thumb/Horizon-Logo-Final-1-n3m28zqd4ylaq5twj9ogo25g6qxjmmnypivn6izpow.jpg" height="52"></img>',
-           '<img src="https://upload.wikimedia.org/wikipedia/fr/thumb/3/3c/Parti-radical_2021.png/640px-Parti-radical_2021.png" height="52"></img>',
            '<img src="https://upload.wikimedia.org/wikipedia/fr/thumb/3/3c/Parti-radical_2021.png/640px-Parti-radical_2021.png" height="52"></img>',
            '<img src="https://logos-marques.com/wp-content/uploads/2020/04/Le-Rassemblement-national-RN-logo.png" height="52"></img>'
   )
@@ -126,40 +117,28 @@ majorite <- function() {
 
 
 saveDataEmargement <- function(data) {
-  responses_bis <- read_delim(file = "data/emargement.csv",
-                              delim = ";",
-                              col_names = TRUE) # %>%
-    #mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
+  responses_bis <- read_excel("data/emargement.xlsx")  %>%
+    mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
   data <- data %>% as.list() %>% data.frame() 
   responses_bis <- rbind(data,responses_bis)
-  write_delim(responses_bis,"data/emargement.csv",delim = ";")}
+  write_xlsx(responses_bis,"data/emargement.xlsx")}
 
 loadDataEmargement <- function() {
-  responses_bis <- read_delim(file = "data/emargement.csv",
-                              delim = ";",
-                              col_names = TRUE)  # %>%
-   #mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
-  read_delim(file = "data/emargement.csv",
-             delim = ";",
-             col_names = TRUE)  # %>%
-  #mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
+  responses_bis <- read_excel("data/emargement.xlsx")  %>%
+    mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
+  read_excel("data/emargement.xlsx") %>%
+    mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
 }
 
 saveDataVote <- function(data) {
-  responses <- read_delim(file = "data/vote.csv",
-                          delim = ";",
-                          col_names = TRUE) 
+  responses <- read_excel("data/vote.xlsx")
   data <- data %>% as.list() %>% data.frame() 
   responses <- rbind(data,responses)
-  write_delim(responses,"data/vote.csv",delim = ";")}
+  write_xlsx(responses,"data/vote.xlsx")}
 
 loadDataVote <- function() {
-  responses <- read_delim(file = "data/vote.csv",
-                          delim = ";",
-                          col_names = TRUE) 
-  read_delim(file = "data/vote.csv",
-             delim = ";",
-             col_names = TRUE) 
+  responszsézes <- read_excel("data/vote.xlsx")
+  read_excel("data/vote.xlsx")
 }
 
 
@@ -297,13 +276,13 @@ server <- function(input, output,session) {
   observeEvent(input$submit_emargement, {
     saveDataEmargement(formData_Emargement())
     
-   # email <- envelope(
-    #   to = input$Mail,
-    #   from = "ledemocratealsacien@gmail.com",
-    #       subject = "Token d'authentification du bureau de vote en ligne",
-    #   text = paste0("Vous trouverez ci-joint le code vous permettant de voter :", bin2hex(hash(charToRaw(input$Mail)))))
+    email <- envelope(
+      to = input$Mail,
+      from = "ledemocratealsacien@gmail.com",
+      subject = "Token d'authentification du bureau de vote en ligne",
+      text = paste0("Vous trouverez ci-joint le code vous permettant de voter :", bin2hex(hash(charToRaw(input$Mail)))))
     
-    # smtp(email, verbose = TRUE)
+    smtp(email, verbose = TRUE)
 
     updateTextInput(session, "Mail", value = "")
     output$responses_bis <- DT::renderDataTable({
@@ -507,6 +486,4 @@ server <- function(input, output,session) {
 }
 
 shinyApp(ui, server)
-
-
 

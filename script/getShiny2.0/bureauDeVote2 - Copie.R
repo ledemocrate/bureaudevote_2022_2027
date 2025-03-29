@@ -55,10 +55,6 @@ responses_bis <- read_delim(file = "data/emargement.csv",
                             delim = ";",
                            col_names = TRUE) # %>%
   #mutate(Naissance = as.Date(as.integer(Naissance),origin="1970-01-01"))
-
-
-
-
 responses <- read_delim(file ="data/vote.csv",
                         delim = ";",
                         col_names = TRUE)

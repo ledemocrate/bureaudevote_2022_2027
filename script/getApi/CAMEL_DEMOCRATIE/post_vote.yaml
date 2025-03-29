@@ -1,0 +1,6 @@
+- route:
+    from:
+      uri: "jetty://http://0.0.0.0:11/assemblee_nationale/post_vote"
+      steps:
+        - to:
+            uri: "kamelet:postgresql-sink?databaseName=bdd_democratie&serverPort=5432&serverName=176.148.154.67&password=02680000&username=goldentzgrahamz&query=INSERT INTO assemblee_representative.vote (identifiant,vote,loi,date) VALUES (:#identifiant,:#vote,:#loi,CURRENT_TIMESTAMP)"

@@ -4,6 +4,18 @@
 
 #LIBRAIRIE UTILISEE
 
+library(RPostgreSQL)
+
+db <- 'bdd_democratie'  #provide the name of your db
+host_db <- 'BDD_DEMOCRATIE' #i.e. # i.e. 'ec2-54-83-201-96.compute-1.amazonaws.com'  
+db_port <- '5432'  # or any other port specified by the DBA
+db_user <- "postgres"  
+db_password <- 'postgres'
+option <- "-c search_path=assemblee_elective"
+
+con <- dbConnect(RPostgres::Postgres(), dbname = db, host=host_db, port=db_port, user=db_user, password=db_password,options=option) 
+
+
 library(rvest) #Pour le web scrapping
 library(stringr) #Pour la manipulation textuelle
 library(tidyverse) #Couteau suisse
@@ -43,7 +55,7 @@ titre_vote <- bind_rows(titre_vote)
 # https://www2.assemblee-nationale.fr/scrutins/liste/(offset)/{sequence_offset}/(legislature)/16/(type)/SOR/(idDossier)/TOUS
 
 # Vérifié manuellement que la sequence_offset prend bien en compte l'ensemble des pages
-sequence_offset <- c("",c(1:3)*100)
+sequence_offset <- c("",c(1:13)*100)
 #Fonction permettant de récupérer les données d'une page
 function_get_url_dosier_scrutin <- function(url){
   url <-
@@ -171,42 +183,13 @@ data_loi <- left_join(data_loi,url_texte_loi_JO,by="url_dossier_associe") %>%
                                 str_detect(titre,"article")~ "article",
                                 str_detect(titre,"ensemble")~ "ensemble"
                                 ))
+
+
 nom_loi <- unique(data.frame(data_loi$nom_loi,data_loi$texte_loi_JO,data_loi$url_dossier_associe)) %>%
   rename(nom_loi=data_loi.nom_loi,url_dossier_associe=data_loi.url_dossier_associe,texte_loi_JO=data_loi.texte_loi_JO) %>%
   mutate(Statut = case_when(!is.na(texte_loi_JO)~1))
 
 names(nom_loi)[1] <- "nom_loi"
 
-setwd(paste0(path,"/data/data_loi/"))
-
-fwrite(nom_loi,paste0("nom_loi","_",Sys.Date(),".csv"),sep=";",col.names = TRUE)
-
-setwd(paste0(path,"/data/data_final/"))
-list.files()
-vote_final_v2 <- fread("vote_final_v2.csv")
-vote_final_v3 <- readRDS(file ="vote_final_v3.rds")
-
-###### Sous réserve d'avoir nom_loi avec statut de la loi si rejete alors 0 si non 1
-setwd(paste0(path,"/data/data_loi/"))
-nom_loi <- read.csv("nom_loi.csv",sep=";")
-
-data_loi <-unique(data_loi %>%
-                    select(uid_loi,nom_loi,date_vote,titre,type_texte))
-
-data_loi$uid_loi <-as.character(data_loi$uid_loi)
-data_loi <- left_join(data_loi,nom_loi,by="nom_loi")
-
-fwrite(data_loi,"data_loi.csv",sep=";",col.names = TRUE)
-
-data_loi$uid_loi <-as.numeric(data_loi$uid_loi )
-data_democratie <- left_join(vote_final_v2 ,data_loi,by="uid_loi") %>%
-  select(-date_vote.y)%>%
-  rename(date_vote=date_vote.x)
-data_democratie_v2 <- left_join(vote_final_v3 ,data_loi,by="uid_loi") %>%
-  select(-date_vote.y)%>%
-  rename(date_vote=date_vote.x)
-
-setwd(paste0(path,"/data/data_democratie/"))
-fwrite(data_democratie,"data_democratie.csv",sep=";",col.names = TRUE)
-saveRDS(data_democratie_v2, file = "data_democratie_v2.rds")
-
+dbWriteTable(con,'nom_loi',nom_loi, row.names=FALSE)
+dbWriteTable(con,'data_loi',data_loi, row.names=FALSE)
