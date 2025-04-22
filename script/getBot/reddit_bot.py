@@ -7,7 +7,7 @@ import os
 # client_id=3KGYUUD9vTaUI35O3G69EQ
 # client_secret=lxdrmytQBrSwZ35jHu-M-eFERwGCaQ
 # username=goldentzgrahams
-# password=+@!Wfusdfcf02680000!@+
+# password=
 # user_agent=PyEng Bot 0.1
 
 os.chdir("C:/Users/Quentin GOLLENTZ/Pictures/TEST")
