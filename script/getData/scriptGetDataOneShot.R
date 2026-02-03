@@ -32,6 +32,8 @@ library(purrr) #Pour certaine fonction
 library(igraph)
 library(lsa)
 
+library(fuzzyjoin)
+install.packages("fuzzyjoin")
 # Fonction éventuellement utilisé pour exclure des valeurs
 `%nin%` = Negate(`%in%`)
 
@@ -40,10 +42,57 @@ sessionInfo()
 packageStatus()
 Sys.getenv()
 getwd()
-setwd("C:/Users/Quentin GOLLENTZ/OneDrive/Documents/PROJET PERSO/bureaudevote_2022_2027/")
+
+setwd("C:/Users/QuentinGOLLENTZ/Documents/PERSO/bureaudevote_2022_2027/")
+
 # On initialise un répertoire racine
 path <-  getwd()
 
+###############################
+### RECUPERATION DES DATA DOSSIER
+###############################
+
+# Endroit ou vous mettez les fichiers json en telechargeant sous le lien 
+setwd(paste0(path,"/data/data_dossier"))
+
+#Endroit ou telecharger les données
+url <- "https://data.assemblee-nationale.fr/static/openData/repository/16/loi/dossiers_legislatifs/Dossiers_Legislatifs.json.zip"
+download.file(url, destfile = basename(url))
+
+#Fichier zip donc dezippage
+unzip("Dossiers_Legislatifs.json.zip")
+
+#L'archive ne nous sert plus à grand chose
+file.remove("Dossiers_Legislatifs.json.zip")
+
+setwd(paste0(path,"/data/data_dossier/json/dossierParlementaire"))
+
+#On recupere la liste des fichiers
+liste_dossier <- list.files()
+
+#Fonction visant pour chaque fichier de la liste a recuperer les informations de vote
+read_data_dossier <- function(liste){
+  #On lit le fichier de la liste
+  dossier <- fromJSON(liste, flatten=TRUE)
+  
+  titre <- dossier[["dossierParlementaire"]][["titreDossier"]][["titre"]]
+  #On récupère les données de vote POUR et on crée un data set
+  
+  
+  data <- tibble(titre)
+  return(data)
+}
+
+dossier <- lapply(liste_dossier, read_data_dossier)
+dossier <- bind_rows(dossier)
+
+
+resultat <- dossier %>% 
+  crossing(titre_vote) %>% # produit cartésien 
+  mutate(distance = stringdist(titre, titre, method = "jw")) %>% 
+  group_by(titre) %>% 
+  slice_min(distance, n = 1) %>% # meilleure correspondance 
+  ungroup()
 ###############################
 ### RECUPERATION DES DATA VOTES
 ###############################
